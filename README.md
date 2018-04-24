@@ -1,2 +1,18 @@
 # anit_JSON_FASTA
-Take antibody sequence data from JSON to FASTA format 
+
+Build trees from antibody JSON data.
+
+## Requirements
+
+- mafft
+- FastTree
+
+Obtain JSON data and place in `data` directory.
+
+## Results
+
+```
+bash pipeline.sh
+```
+
+
