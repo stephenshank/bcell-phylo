@@ -1,4 +1,4 @@
-# anit_JSON_FASTA
+# anti\_JSON_FASTA
 
 Build trees from antibody JSON data.
 
@@ -6,13 +6,19 @@ Build trees from antibody JSON data.
 
 - mafft
 - FastTree
+- yarn
 
 Obtain JSON data and place in `data` directory.
 
-## Results
+## Pipeline
 
 ```
 bash pipeline.sh
 ```
 
+## Visualization
+
+```
+yarn start
+```
 
