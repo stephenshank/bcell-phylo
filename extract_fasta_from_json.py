@@ -45,5 +45,5 @@ with open(output_path, 'w') as output_file:
     for i, item in enumerate(it.chain.from_iterable(data)):
         if int(item["size"]) > size:
             output_file.write(''.join(
-                ['>seq' + str(i) + '_time-' + str(time) + '_size-' + str(item["size"]) + '_' + str(item["centroid"])[1:].replace(':','.')]
+                ['>seq' + str(i) + '_time-' + str(time) + '_size-' + str(item["size"]) + '_' + str(item["tag"]).split('|')[0] + str(item["centroid"])[1:].split(':')[10]]
             ))
