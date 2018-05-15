@@ -1,28 +1,36 @@
 # anti\_JSON_FASTA
 
-Build trees from antibody JSON data.
+Build and visualize trees from antibody JSON data.
 
 ## Requirements
 
-- mafft
-- FastTree
-- yarn
+- [mafft](https://mafft.cbrc.jp/alignment/software/)
+- [FastTree](http://www.microbesonline.org/fasttree/)
+- [yarn](https://yarnpkg.com/en/)
 
-Obtain JSON data and place in `data` directory.
+Obtain a copy of the compressed input data, `bcells.tar.gz`, and place in the input data directory via
+
+```
+tar xvzf /path/to/bcells.tar.gz -C data/input/
+```
+
+Install JavaScript dependencies with
+
+```
+yarn
+```
 
 ## Pipeline
 
--for non-replicate data, put your data into the data_in folder
+After installing requirements, from the base of this directory run
+
 ```
-bash pipeline.sh
+bash pipeline/main.sh
 ```
--for replicate data, put your data into the data_rep_in folder
-```
-bash pipeline_rep.sh
-```
-## Downstream files
--you can visualize both replicate and non replicate data in a convenient csv format
+
 ## Visualization
+
+After running the pipeline:
 
 ```
 yarn start

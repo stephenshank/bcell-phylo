@@ -13,10 +13,10 @@ class JSONs extends Component {
     };
   }
   componentDidMount(){
-    this.loadJSON(6);
+    this.loadJSON(7);
   }
   loadJSON(json_id) {
-    d3.json(`/data/${json_id}_clone.json`, (err, data) => {
+    d3.json(`/data/input/${json_id}_clone.json`, (err, data) => {
       this.setState({ json_content: data });
     });
   }
@@ -27,13 +27,12 @@ class JSONs extends Component {
           <ToggleButtonGroup
             type="radio"
             name="options"
-            defaultValue={6}
+            defaultValue={7}
             onChange={value=>this.loadJSON(value)}
           >
-            <ToggleButton value={6}>6</ToggleButton>
-            <ToggleButton value={7}>7</ToggleButton>
-            <ToggleButton value={9}>9</ToggleButton>
-            <ToggleButton value={11}>11</ToggleButton>
+            {[7, 8, 9, 10, 11, 12].map(d=>{
+              return <ToggleButton value={d}>{d}</ToggleButton>
+            })}
           </ToggleButtonGroup>
         </ButtonToolbar>
       </Col>
