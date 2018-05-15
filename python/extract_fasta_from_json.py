@@ -6,15 +6,23 @@ Created on Thu Apr 12 09:49:52 2018
 @author: jordanzehr
 """
 
+import os
+
 import json
 import itertools as it
 import argparse
 from Bio.Seq import Seq
 
-## change the number (3 spots) at the front of the 3 commands based on the data input
 
 parser = argparse.ArgumentParser(
     description='Extract information from B-cell jsons.'
+)
+parser.add_argument(
+    '-o', '--output',
+    metavar='OUTPUT',
+    type=str,
+    help='Directory to output results',
+    required=True
 )
 parser.add_argument(
     '-f', '--file',
@@ -34,10 +42,13 @@ parser.add_argument(
 args = parser.parse_args()
 input_path = args.file
 size = args.size
+output_directory = args.output
 
 stem, extension = input_path.split('.')
-output_path = stem + '_size-' + str(size) + '_unaligned.fasta'
-time = int(input_path.split('_')[2].split('/')[1])
+filename = stem.split('/')[-1]
+output_path_vars = (output_directory, filename, size)
+output_path = '%s/%s_size-%d_unaligned.fasta' % output_path_vars
+time = int(filename.split('_')[0])
 
 with open(input_path, 'r') as input_file:
     data = json.load(input_file)

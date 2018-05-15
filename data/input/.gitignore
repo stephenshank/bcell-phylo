@@ -1,3 +1,4 @@
-*.json
 *.fasta
 *.new
+*.json
+*.csv
