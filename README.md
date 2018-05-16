@@ -1,6 +1,6 @@
-# anti\_JSON_FASTA
+# bcell-phylo
 
-Build and visualize trees from antibody JSON data.
+Build and visualize phylogenetic trees from antibody JSON data.
 
 ## Requirements
 

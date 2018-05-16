@@ -10,19 +10,27 @@ require("phylotree");
 
 const colors = {
   'no_replicates': {
-    7: 'red',
-    9: 'blue',
-    11: 'purple'
-  },
+      7: 'red',
+      9: 'blue',
+      11: 'purple'
+    },
   'replicates': {
-    7: 'red',
-    8: 'pink',
-    9: 'blue',
-    10: 'lightblue',
-    11: 'purple',
-    12: 'plum'
-  }
-}
+      7: 'red',
+      8: 'pink',
+      9: 'blue',
+      10: 'lightblue',
+      11: 'purple',
+      12: 'plum'
+    }
+  },
+  labels = {
+    7: 'Visit 1, Tube 2',
+    8: 'Visit 1, Tube 4',
+    9: 'Visit 2, Tube 2',
+    10: 'Visit 2, Tube 4',
+    11: 'Visit 3, Tube 2',
+    12: 'Visit 3, Tube 4'
+  };
 
 class Trees extends Component {
   constructor(props) {
@@ -89,7 +97,7 @@ class Trees extends Component {
           <svg height={500}>
             {_.pairs(fills).map((d,i) => {
               return [<rect width={20} height={20} fill={d[1]} transform={`translate(0,${20+25*i})`} />,
-                <text x={25} y={35+25*i}>Datapoint {d[0]}</text>];
+                <text x={25} y={35+25*i}>{labels[d[0]]}</text>];
             }) } 
           </svg>
         </div>
