@@ -11,4 +11,4 @@ cat data/replicates/*clone*_unaligned.fasta > data/replicates/full_size-30_unali
 mafft data/replicates/full_size-30_unaligned.fasta > data/replicates/full_size-30.fasta
 FastTree -nt data/replicates/full_size-30.fasta > data/replicates/full_size-30.new
 
-python python/extract_csv_from_fasta.py --file data/replicates/full_size-30.fasta
+#python python/extract_csv_from_fasta.py --file data/replicates/full_size-30.fasta

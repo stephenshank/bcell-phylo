@@ -65,8 +65,11 @@ with open(output_path, 'w') as output_file:
             else:
                 output_file.write(''.join(
                 ['>seq' + str(i) + '_time-' + str(time) + '_size-' + str(item["size"]) + '_' 
-                 + str((t).translate()[1:-2]) + '_' + str(j) + '_' + c.split(':')[10]]
+                 + str((t).translate()[1:-2]) +
+                  '_' + str(j) + '_' +
+                   str(c) ]
             ))
+
 
 
 
