@@ -5,11 +5,13 @@
 
 #mafft data/v1/V1_un.fasta > data/v1/V1_aligned.fasta
 
-#######################################
+########################################
 ## THIS IS WHERE THE PIPELINE STARTS ##
 ######################################
-
-# use as: bash pipeline/v_get.sh
+#############################################
+## When you are in the b-cell-phylo folder:# 
+## use: bash pipeline/v_get.sh ############
+##########################################
 
 	## this loop will grab the jsons and spit out the clone files (with all the sequences) ##
 	## need to change this loop to match the patient json files ## 
