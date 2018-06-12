@@ -24,6 +24,7 @@ yarn
 
 After installing requirements, from the base of this directory run
 
+To run Stephens pipeline:
 ```
 bash pipeline/main.sh
 ```
@@ -35,4 +36,9 @@ After running the pipeline:
 ```
 yarn start
 ```
-
+to run Jordan's pipeline:
+make sure you are in the bcell-phylo directory and then just type
+```
+bash jordan-pipe.sh
+```
+go to data/sandbox/output/viz/  and then look at the two folders
