@@ -13,3 +13,10 @@ do
   mafft data/sandbox/output/unaligned_v-genes/V$i\_un.fasta > data/sandbox/output/aligned_v-genes/V$i\_aligned.fasta
 
 done;
+
+	## this loop is going to align all the time-point fasta files ##
+for i in {7..12}
+do
+  mafft data/sandbox/output/unaligned_jsons/$i\_clone_size-30_unaligned.fasta > data/sandbox/output/aligned_jsons/$i\_aligned.fasta
+
+done;

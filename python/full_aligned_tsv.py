@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jun 12 10:24:27 2018
+
+@author: jordanzehr
+"""
 
 # coding: utf-8
 
@@ -70,7 +77,7 @@ for i in header:
     n = int(i.split('_')[1].split('-')[1])
     #if not n % 2 == 0:
         #time.append(n)
-    time.append(i.split('_')[1].split('-')[1])
+    time.append(int(i.split('_')[1].split('-')[1]))
     vdj.append(i.split('_')[4])
 
 v_gene_full = []
@@ -149,3 +156,5 @@ with open(p, 'w') as out:
     out.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format('#', 'Time', 'Size', 'CDR3 Length (AA)','V','V_gene','Full_V-gene', 'A.A. Seq'))
     for i, j in enumerate(lines):
         out.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format( i+1, j[0], j[1], j[2], j[3],j[4],j[5],j[6]))
+
+
