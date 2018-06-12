@@ -31,14 +31,14 @@ o_dir <- paste0(output,'/','77612_vall_noreps.png')
 ggsave(o_dir, width = 13, height =8)
 
 
-ggplot(data = d) +
-    labs(title = "77612", subtitle = "Clone size V-gene VS Visits, Sick at all time points.", x = 'Visits', y = 'Clone size of V-gene (log)') +
-    geom_point(mapping = aes(Time,log(Size), color = Time, alpha =.03)) +
-    facet_wrap(~V) +
-    theme(axis.text.x = element_text(face="bold", color="black", 
+#ggplot(data = d) +
+#    labs(title = "77612", subtitle = "Clone size V-gene VS Visits, Sick at all time points.", x = #'Visits', y = 'Clone size of V-gene (log)') +
+#    geom_point(mapping = aes(Time,log(Size), color = Time, alpha =.03)) +
+#    facet_wrap(~V) +
+#    theme(axis.text.x = element_text(face="bold", color="black", 
                            size=8, angle=45)) 
-o_dir <- paste0(output,'/','77612_v_noreps.png')
-ggsave(o_dir, width = 13, height =8)
+#o_dir <- paste0(output,'/','77612_v_noreps.png')
+#ggsave(o_dir, width = 13, height =8)
 
 
 ## this is  test section ##

@@ -1,8 +1,17 @@
-#*.fasta
-#*.new
-#*.json
-#*.csv
-#*.tsv
+	## this should ignore all files in the pipeline ##
+	
+data/sandbox/output/aligned_jsons/*.tsv
+data/sandbox/output/aligned_jsons/*.fasta
+
+data/sandbox/output/aligned_v-genes/*.fasta
+
+data/sandbox/output/tsvs/*.tsv
+
+data/sandbox/output/unaligned_jsons/*.fasta
+
+data/sandbox/output/unaligned_v-genes/*.fasta
+
+data/sandbox/output/viz/trees/*.new
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
