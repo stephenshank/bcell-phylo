@@ -1,0 +1,4 @@
+## ignore every output that we make ##
+
+*.json 
+*.fasta
