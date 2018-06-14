@@ -26,7 +26,7 @@ After installing requirements, from the base of this directory run
 
 To run Stephens pipeline:
 ```
-bash pipeline/main.sh
+bash pipeline/stephen.sh
 ```
 
 ## Visualization
