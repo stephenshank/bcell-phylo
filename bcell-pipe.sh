@@ -15,7 +15,7 @@ do
 	rm data/out/$i/$i*.fasta
 	rm data/out/$i/$i*.new
  	echo $i 'is a patient'
-----####################################
+    ####################################
 	## this will go through each time point for each patient ## 
 	for a in {1..6}
 	do

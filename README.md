@@ -1,9 +1,10 @@
-# anti\_JSON_FASTA
-
 Build and visualize trees from antibody JSON data.
 
 ## Requirements
 
+- Anaconda 
+- R 
+- Python 
 - [mafft](https://mafft.cbrc.jp/alignment/software/)
 - [FastTree](http://www.microbesonline.org/fasttree/)
 - [yarn](https://yarnpkg.com/en/)

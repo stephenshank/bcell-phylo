@@ -1,4 +1,0 @@
-This file will help break down the pipeline into its parts. 
-
-At this point the code should be separated into 'tree.sh', 'tsv.sh', etc'.
-This will be useful until I have a better understanding of snakemake and can create a better work flow.
