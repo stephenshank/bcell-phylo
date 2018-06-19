@@ -60,9 +60,11 @@ class Trees extends Component {
     this.displayTree();
   }
   displayTree(dataset) {
-    const { active } = this.props;
+    const { active, size } = this.props;
+    // Pretty awful hack due to lack of understanding of node_span
+    const exponent = size == 30 ? .5 : .35;
     d3.select('#tree_display').html('');
-    d3.text(`/data/${active}/full_size-30.new`, (err, data) => {
+    d3.text(`/data/${active}/full_size-${size}.new`, (err, data) => {
       const fills = colors[active];
       var tree = d3.layout.phylotree()
         .svg(d3.select("#tree_display"))
@@ -72,7 +74,7 @@ class Trees extends Component {
           'selectable': false
         }).style_nodes(function(container, node){
           if(d3.layout.phylotree.is_leafnode(node)) {
-            const r = Math.floor(Math.sqrt(get_size(node)));
+            const r = get_size(node)**exponent;
             const p = Math.random();
             const arc = d3.svg.arc()
               .outerRadius(r)
@@ -87,13 +89,15 @@ class Trees extends Component {
               fan_g.append("path")
                 .attr("d", arc)
                 .attr("fill", function(d) { return fills[d.data[0]]; })
-                .attr("transform", `translate(${r},${0})`);
-            container.selectAll("text")
-              .attr("transform", `translate(${2*r},0)`);
+                .attr("transform", `translate(${r},0)`);
+            const translate_string = `translate(${2*r},0)`;
+            setTimeout(()=>container.selectAll("text")
+              .attr("transform", translate_string), 500);
           }
         }).node_span(function(node){
           if(d3.layout.phylotree.is_leafnode(node)) {
-            return Math.floor(.5*(get_size(node))**.5);
+            const size = get_size(node);
+            return get_size(node)**exponent;
           }
         });
       tree(data);

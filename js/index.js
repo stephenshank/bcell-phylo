@@ -13,10 +13,17 @@ require('./main.css');
 class App extends Component {
   constructor(props){
     super(props);
-    this.state = { active: "no_replicates" };
+    this.state = { active: "no_replicates", size: 200 };
   }
   onSelect(key){
-    if(key) this.setState({ active: key });
+    if(key) {
+      const active = key.split('-')[0],
+        size = +key.split('-')[1];
+      this.setState({
+        active: active,
+        size: size
+      });
+    }
   }
   render(){
     return(<Router>
@@ -29,11 +36,17 @@ class App extends Component {
           </Navbar.Header>
           <Nav>
             <NavDropdown title='Dataset'>
-              <MenuItem eventKey='replicates' active={this.state.active == 'replicates'}>
-                Replicates
+              <MenuItem eventKey='replicates-30' active={this.state.active == 'replicates' && this.state.size == 30}>
+                Replicates, size 30
               </MenuItem>
-              <MenuItem eventKey='no_replicates' active={this.state.active == 'no_replicates'}>
-                No replicates
+              <MenuItem eventKey='no_replicates-30' active={this.state.active == 'no_replicates' && this.state.size == 30}>
+                No replicates, size 30
+              </MenuItem>
+              <MenuItem eventKey='replicates-200' active={this.state.active == 'replicates' && this.state.size == 200}>
+                Replicates, size 200
+              </MenuItem>
+              <MenuItem eventKey='no_replicates-200' active={this.state.active == 'no_replicates' && this.state.size == 200}>
+                No replicates, size 200
               </MenuItem>
             </NavDropdown>
             <LinkContainer exact to="/">
@@ -49,7 +62,7 @@ class App extends Component {
           </Nav>
         </Navbar>
         <Grid>
-          <Route exact path="/" render={()=><Trees active={this.state.active} />} />
+          <Route exact path="/" render={ () => <Trees active={this.state.active} size={this.state.size} /> } />
           <Route path="/jsons" component={JSONs} />
         </Grid>
       </div>
