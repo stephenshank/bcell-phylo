@@ -32,6 +32,22 @@ const colors = {
     12: 'Visit 3, Tube 4'
   };
 
+function get_name(node) {
+  return node.name.split('_')[0];
+}
+
+function get_size(node) {
+  return +node.name.split('_')[2].split('-')[1];
+}
+
+function get_time(node) {
+  return +node.name.split('_')[1].split('-')[1];
+}
+
+function get_cdr3(node) {
+  return node.name.split('_')[3];
+}
+
 class Trees extends Component {
   constructor(props) {
     super(props);
@@ -55,31 +71,60 @@ class Trees extends Component {
           'top-bottom-spacing': 'fixed-step',
           'selectable': false
         }).style_nodes(function(container, node){
-          if(node.name[0]=='s') {
-            const r = Math.floor(Math.sqrt(+node.name.split('_')[2].split('-')[1])),
-              time = +node.name.split('_')[1].split('-')[1];
-            container.append('circle')
-              .attr('cx', r)
-              .attr('cy', 0)
-              .attr('r', r)
-              .style('fill', fills[time])
-              .style('stroke', 'black');
-            container.select('text')
-              .attr('dx', 2*r+1)
-              .attr('fill', fills[time]);
+          if(d3.layout.phylotree.is_leafnode(node)) {
+            const r = Math.floor(Math.sqrt(get_size(node)));
+            const p = Math.random();
+            const arc = d3.svg.arc()
+              .outerRadius(r)
+              .innerRadius(0),
+              pie = d3.layout.pie()
+                .value(function(d) { return d[1]; }),
+              fan_g = container.selectAll(".fan")
+                .data(pie(_.pairs(node.pie_data)))
+                .enter()
+                  .append("g")
+                  .attr("class", "fan");
+              fan_g.append("path")
+                .attr("d", arc)
+                .attr("fill", function(d) { return fills[d.data[0]]; })
+                .attr("transform", `translate(${r},${0})`);
+            container.selectAll("text")
+              .attr("transform", `translate(${2*r},0)`);
           }
         }).node_span(function(node){
           if(d3.layout.phylotree.is_leafnode(node)) {
-            return Math.floor(.5*(+node.name.split('_')[2].split('-')[1])**.5);
+            return Math.floor(.5*(get_size(node))**.5);
           }
         });
       tree(data);
-      tree.traverse_and_compute (function (n) {
-        var d = 1;
-        if (n.children && n.children.length) {
-          d += d3.max (n.children, function (d) { return d["count_depth"];});
+      tree.traverse_and_compute (function (node) {
+        if(node.children && _.all(node.children.map(d3.layout.phylotree.is_leafnode)) ) {
+          const cdr3_1 = get_cdr3(node.children[0]),
+            cdr3_2 = get_cdr3(node.children[1]);
+          if(cdr3_1 == cdr3_2) {
+            const child1_size = get_size(node.children[0]),
+              child2_size = get_size(node.children[1]),
+              child1_name = get_name(node.children[0]),
+              child2_name = get_name(node.children[1]),
+              new_size = child1_size+child2_size;
+
+            node.name = child1_name + "+" + child2_name + "_MERGED_size-"+new_size+"_"+cdr3_1;
+            node.pie_data = _.mapObject(node.children[0].pie_data, function(val, key) {
+              return val+node.children[1].pie_data[key];
+            });
+            node.children = undefined;
+          }
+        } else if (d3.layout.phylotree.is_leafnode(node)) {
+          node.pie_data = _.mapObject(fills, function(val, key) {
+            const time = get_time(node);
+            return key == time ? get_size(node) : 0;
+          });
         }
-        n["count_depth"] = d;
+        var d = 1;
+        if (node.children && node.children.length) {
+          d += d3.max (node.children, function (d) { return d["count_depth"];});
+        }
+        node["count_depth"] = d;
       });
       tree.resort_children (function (a,b) {
         return (a["count_depth"] - b["count_depth"]);

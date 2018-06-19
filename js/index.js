@@ -13,7 +13,7 @@ require('./main.css');
 class App extends Component {
   constructor(props){
     super(props);
-    this.state = { active: "replicates" };
+    this.state = { active: "no_replicates" };
   }
   onSelect(key){
     if(key) this.setState({ active: key });
