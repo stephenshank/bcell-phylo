@@ -1,5 +1,21 @@
-Build and visualize trees from antibody JSON data.
+## Build and visualize trees from antibody JSON data. ##
 
+
+
+First:
+	Need to activate the virtual environment to run the pipeline.
+	Copy and paste these commands:
+		- if you have Mac:
+		`conda create --name bcell --file spec-file.txt`
+		`source activate bcell`
+		
+		- if you have Windows
+		- if you have Linux
+
+Second: 
+	cd in the bcell-phylo directory and run the command 
+	`bash bcell-pipe.sh`
+	
 ## Requirements
 
 - Anaconda 
