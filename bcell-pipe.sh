@@ -3,6 +3,11 @@ ids=('28729' '48689' '67029' '77612' '78202' '93954' '99361' '99682' 'GJS')
 #ids=('28729' '48689')
 #echo ${ids[@]}
 
+## Activate virtual env ##
+
+conda create --name myenv --file env.txt
+conda install --name myenv --file env.txt
+source activate myenv
 
 ######################################
 ## this first loop will go through each patient ##
@@ -57,4 +62,6 @@ do
 		FastTree -nt data/out/$i/V$j\_aligned.fasta > data/out/$i/$i\_V$j.new
 	done;
 done;	
-	
+
+## Deactivate both of the Vurtual envs here ## 
+source deactivate

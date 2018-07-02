@@ -1,9 +1,0 @@
-name: bcell
-
-dependencies:
-    - python=3.6.5
-    - Biopython
-    - R=3.4.3
-    - fast tree
-    - mafft 
-    - yearn
