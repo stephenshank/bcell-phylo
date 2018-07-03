@@ -1,1 +1,0 @@
-Rscript R/R_viz_patient.r data/sandbox/output/tsvs/77612_master.tsv data/sandbox/output/viz/pretty_pictures
