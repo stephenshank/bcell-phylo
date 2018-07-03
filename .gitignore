@@ -1,3 +1,10 @@
+	## this should ignore all files in the pipeline ##
+	
+data/input/*
+data/out/*/*.tsv
+data/out/*/*.fasta
+data/out/*/*.new
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
