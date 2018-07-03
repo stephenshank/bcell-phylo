@@ -5,10 +5,6 @@ ids=('28729' '48689' '67029' '77612' '78202' '93954' '99361' '99682' 'GJS')
 
 ## Activate virtual env ##
 
-conda create --name myenv --file env.txt
-conda install --name myenv --file env.txt
-source activate myenv
-
 ######################################
 ## this first loop will go through each patient ##
 for i in ${ids[@]}
@@ -27,7 +23,7 @@ do
 		echo 'converting'$i'_'$a'_clone.json to an unaligned fasta file'
 	#######	change the output of this, the size is too rigid ## 
 		python python/json_to_unaligned_fasta.py \
-				--file data/input/*/$i\_$a\_clone.json \
+				--file data/input/$i\_$a\_clone.json \
  				--size 100 \
 				--out data/out/$i/
 		## this file should be open to append to, but I am curious to see how it 
@@ -62,6 +58,3 @@ do
 		FastTree -nt data/out/$i/V$j\_aligned.fasta > data/out/$i/$i\_V$j.new
 	done;
 done;	
-
-## Deactivate both of the Vurtual envs here ## 
-source deactivate
