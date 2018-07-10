@@ -1,4 +1,3 @@
-
 import json
 import itertools as it
 import argparse
@@ -46,7 +45,7 @@ time = int(filename.split('_')[1])
 with open(input_path, 'r') as input_file:
     data = json.load(input_file)
 
-with open(output_path, 'w') as output_full:
+with open(output_path, 'w') as output_file:
     for i, item in enumerate(it.chain.from_iterable(data)):
         if int(item["size"]) > size:
             t = Seq(item["tag"]).split('|')[1] #this should be nuc seq
@@ -56,13 +55,13 @@ with open(output_path, 'w') as output_full:
             #print(c)
             c = c_list[-1]
             #k = str(item["centroid"]).replace(':','!')
-            
+
             bad_t = []
             if '-' in t:
                 bad_t.append(t)
             else:
-                output_full.write(''.join(
-                ['>seq' + str(i) + '_time-' + str(time) + '_size-' + str(item["size"]) + '_' 
+                output_file.write(''.join(
+                ['>seq' + str(i) + '_time-' + str(time) + '_size-' + str(item["size"]) + '_'
                  + str((t).translate()[1:-2]) +
                   '_' + str(j) + '_' +
                    str(c) ]
