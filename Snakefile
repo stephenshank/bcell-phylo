@@ -1,9 +1,10 @@
 PATIENT_IDS = ["28729", "48689", "67029", "77612", "78202", "93954", "99361", "99682", "GJS"]
 GENES = ["V1", "V2", "V3", "V4", "V5", "V6", "V7"] 
+CLONES = ["1", "2", "3", "4", "5", "6"]
 
 rule all:
   input:
-    expand("data/out/{patient_id}/{gene}.new", patient_id=PATIENT_IDS, gene=GENES)
+    expand("data/out/{patient_id}/{patient_id}_{clone}_clone_size-30_unaligned.fasta", patient_id=PATIENT_IDS, clone=CLONES)
 
 rule unaligned_fasta_clone:
   input:
