@@ -13,17 +13,36 @@ require('./main.css');
 class App extends Component {
   constructor(props){
     super(props);
-    this.state = { active: "no_replicates", size: 200 };
+    this.patients = [ '77612', '67029' ];
+    this.genes = [1,2,3,4,5,6,7].map(i=>'V'+i);
+    this.state = { 
+      patient: null,
+      gene: null
+    };
+  }
+  loadData(patient, gene) {
+    const json_path = `/data/out/${patient}/${gene}.json`;
+    const fasta_path = `/data/out/${patient}/${gene}_aligned.fasta`;
+    d3.text(fasta_path, (err, fasta_data) => {
+      d3.json(json_path, (err, json_data) => {
+        this.setState({
+          patient: patient,
+          gene: gene,
+          fasta: fasta_data,
+          json: json_data
+        });
+      });
+    });
+  }
+  componentDidMount() {
+    const patient = '77612';
+    const gene = 'V3';
+    this.loadData(patient, gene);
   }
   onSelect(key){
-    if(key) {
-      const active = key.split('-')[0],
-        size = +key.split('-')[1];
-      this.setState({
-        active: active,
-        size: size
-      });
-    }
+    const patient = key.type == 'patient' ? key.value : this.state.patient;
+    const gene = key.type == 'gene' ? key.value : "V3";
+    this.loadData(patient, gene);
   }
   render(){
     return(<Router>
@@ -35,35 +54,26 @@ class App extends Component {
             </Navbar.Brand>
           </Navbar.Header>
           <Nav>
-            <NavDropdown title='Dataset'>
-              <MenuItem eventKey='replicates-30' active={this.state.active == 'replicates' && this.state.size == 30}>
-                Replicates, size 30
-              </MenuItem>
-              <MenuItem eventKey='no_replicates-30' active={this.state.active == 'no_replicates' && this.state.size == 30}>
-                No replicates, size 30
-              </MenuItem>
-              <MenuItem eventKey='replicates-200' active={this.state.active == 'replicates' && this.state.size == 200}>
-                Replicates, size 200
-              </MenuItem>
-              <MenuItem eventKey='no_replicates-200' active={this.state.active == 'no_replicates' && this.state.size == 200}>
-                No replicates, size 200
-              </MenuItem>
+            <NavDropdown title='Patient'>
+              {this.patients.map(patient_id => {
+                const eventKey = { type: 'patient', value: patient_id };
+                return (<MenuItem eventKey={eventKey} active={this.state.patient == patient_id}>
+                  {patient_id}
+                </MenuItem>);
+                }) }
             </NavDropdown>
-            <LinkContainer exact to="/">
-              <NavItem href="#">
-                Trees
-              </NavItem>
-            </LinkContainer>
-            <LinkContainer to="/jsons">
-              <NavItem>
-                JSONs
-              </NavItem>
-            </LinkContainer>
+            <NavDropdown title='Gene'>
+              {this.genes.map(gene => {
+                const eventKey = { type: 'gene', value: gene };
+                return (<MenuItem eventKey={eventKey} active={this.state.gene == gene}>
+                  {gene}
+                </MenuItem>);
+              }) }
+            </NavDropdown>
           </Nav>
         </Navbar>
-        <Grid>
-          <Route exact path="/" render={ () => <Trees active={this.state.active} size={this.state.size} /> } />
-          <Route path="/jsons" component={JSONs} />
+        <Grid fluid>
+          <Route exact path="/" render={ () => <Trees json={this.state.json} fasta={this.state.fasta} /> } />
         </Grid>
       </div>
     </Router>);
