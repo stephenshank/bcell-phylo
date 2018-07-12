@@ -1,139 +1,42 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu May 31 21:01:10 2018
-
-@author: jordanzehr
-"""
-
-
-# In[1]:
-
+import argparse
+import re
 
 from Bio import SeqIO
-import argparse
 
 
 parser = argparse.ArgumentParser(
-    description='Extracts the different V genes from an unaligned fasta file')
-parser.add_argument(
-    '-o', '--output',
-    metavar='OUTPUT',
-    type=str,
-    help='Directory to output results',
-    required=True
+    description='Extracts the different V genes from a given patient'
 )
+
 parser.add_argument(
-    '-f', '--file',
-    metavar='FILE',
+    '-p', '--patient',
+    metavar='PATIENT',
     type=str,
-    help='Name of JSON file to parse',
+    help='Patient ID.',
     required=True
 )
 
 args = parser.parse_args()
-input_path = args.file
-#print(input_path)
-output_directory = args.output
-#print(output_directory)
+patient_id = args.patient
 
-# In[71]:
-
-
-header = []
-sequence = []
-header1 = []
-seq1 = []
-header2 = []
-seq2 = []
-header3 = []
-seq3 = []
-header4 = []
-seq4 = []
-header5 = []
-seq5 = []
-header6 = []
-seq6 = []
-header7 = []
-seq7 = []
-headerV = []
-seqV = []
-bad = []
-
-
-# In[72]:
-
-
-def fasta_reader(title,fasta_self):
-    for i,record in enumerate(SeqIO.parse(fasta_self,'fasta')):
-        header.append(record.id)
-        sequence.append(str(record.seq))
-        if 'V1' in record.id:
-            header1.append(record.id)
-            seq1.append(sequence[i])
-        elif 'V2' in record.id:
-            header2.append(record.id)
-            seq2.append(sequence[i])
-        elif 'V3' in record.id:
-            header3.append(record.id)
-            seq3.append(sequence[i])
-        elif 'V4' in record.id:
-            header4.append(record.id)
-            seq4.append(sequence[i])
-        elif 'V5' in record.id:
-            header5.append(record.id)
-            seq5.append(sequence[i])
-        elif 'V6' in record.id:
-            header6.append(record.id)
-            seq6.append(sequence[i])
-        elif 'V7' in record.id:
-            header7.append(record.id)
-            seq7.append(sequence[i])
-        elif 'V,' in record.id:
-            headerV.append(record.id)
-            seqV.append(sequence[i])
+all_v_sequences = [[] for i in range(7)]
+v_gene_regex = re.compile('._V(\d).')
+bad_searches = []
+for clone in [1, 2, 3, 4, 5, 6]:
+    path_vars = ( patient_id, clone )
+    input_path = 'data/out/%s/clone_%d_unaligned.fasta' % path_vars
+    current_clone = SeqIO.parse(input_path, 'fasta')
+    for sequence in current_clone:
+        regex_search = v_gene_regex.search(sequence.id)
+        if not regex_search is None:
+            v_gene = int(regex_search.group(1))
+            all_v_sequences[v_gene-1].append(sequence)
         else:
-            bad.append(record.id)
+            bad_searches.append(sequence.id)
 
+for i, v_sequences in enumerate(all_v_sequences):
+    output_path = 'data/out/%s/V%d_unaligned.fasta' % (patient_id, i+1)
+    SeqIO.write(v_sequences, output_path, 'fasta')
 
-# In[73]:
-
-
-t = str(input_path.split('/')[-1] )
-fasta_reader(t,input_path)
-
-
-# In[42]:
-
-
-def v_writer(L1,L2):
-    if not L1:
-        print('this list is empty')
-        return
-    else:
-        V = str.upper(L1[0].split('_')[4].split(',')[0].split('-')[0])
-        print('L1 is',V)
-        print(V)
-    lines = zip(L1,L2)
-    #testString = str(v + ".fasta")
-    #print(testString)
-    out_path = str(output_directory + '/' + V + '_un.fasta')
-
-    with open(out_path,'a') as out:
-        for i, j in enumerate(lines):
-            out.write('{}\n{}\n'.format('>' + j[0], j[1]))
-    print(out_path)
-
-v_writer(header1,seq1)
-v_writer(header2,seq2)
-v_writer(header3,seq3)
-v_writer(header4,seq4)
-v_writer(header5,seq5)
-v_writer(header6,seq6)
-v_writer(header7,seq7)
-v_writer(headerV,seqV)
-
-# In[43]:
-
-
-
+bad_search_text = '\n'.join(bad_searches)
+print('%d searches were bad: %s' % ( len(bad_searches), bad_search_text) )
