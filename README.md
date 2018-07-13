@@ -31,6 +31,13 @@ tar xvzf /path/to/patients_clones.tar.gz -C data/input/
 After installing requirements, run the pipeline from the bcell-phylo directory:
 
 ```
+snakemake -j $NUMBER_OF_CONCURRENT_JOBS $TARGET
+```
+
+Or, to distribute jobs with Sun Grid Engine:
+
+
+```
 snakemake $TARGET --cluster "qsub -V" -j $NUMBER_OF_CONCURRENT_JOBS
 ```
 
