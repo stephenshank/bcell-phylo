@@ -22,10 +22,10 @@ yarn
 
 ## Pipeline
 
-Obtain a copy of the compressed input data, `patients_clones.tar.gz`, and place in the input data directory via
+Obtain a copy of the compressed input data, `bcell-phylo.tar.gz`, and place in the input data directory via
 
 ```
-tar xvzf /path/to/patients_clones.tar.gz -C data/input/
+tar xvzf /path/to/bcell-phylo.tar.gz -C data/input/
 ```
 
 After installing requirements, run the pipeline from the bcell-phylo directory:
