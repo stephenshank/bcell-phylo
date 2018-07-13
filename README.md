@@ -29,9 +29,12 @@ tar xvzf /path/to/patients_clones.tar.gz -C data/input/
 ```
 
 After installing requirements, run the pipeline from the bcell-phylo directory:
+
 ```
-bash bcell-pipe.sh
+snakemake $TARGET --cluster "qsub -V" -j $NUMBER_OF_CONCURRENT_JOBS
 ```
+
+Make sure that the `python` executable for the `conda` environment is on your `$PATH`.
 
 ## Visualization
 
