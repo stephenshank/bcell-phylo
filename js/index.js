@@ -22,15 +22,11 @@ class App extends Component {
   }
   loadData(patient, gene) {
     const json_path = `/data/out/${patient}/${gene}.json`;
-    const fasta_path = `/data/out/${patient}/${gene}_aligned.fasta`;
-    d3.text(fasta_path, (err, fasta_data) => {
-      d3.json(json_path, (err, json_data) => {
-        this.setState({
-          patient: patient,
-          gene: gene,
-          fasta: fasta_data,
-          json: json_data
-        });
+    d3.json(json_path, (err, json_data) => {
+      this.setState({
+        patient: patient,
+        gene: gene,
+        json: json_data
       });
     });
   }

@@ -1,3 +1,7 @@
 body {
   padding-top: 70px;
 }
+
+#guide-tree path.branch {
+  opacity: .5;
+}

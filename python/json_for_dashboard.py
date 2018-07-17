@@ -30,6 +30,10 @@ with open('data/out/%s/V%s.fasta' % (patient_id, v_gene) ) as file:
     fasta = file.read()
 with open('data/out/%s/V%s.new' % (patient_id, v_gene) ) as file:
     newick = file.read()
-output_dict = { 'fasta': fasta, 'newick': newick }
+output_dict = {
+    'fasta': fasta,
+    'newick': newick,
+    'number_of_sequences': fasta.count('>')
+}
 with open('data/out/%s/V%s.json' % (patient_id, v_gene), 'w') as file:
     json.dump(output_dict, file)
