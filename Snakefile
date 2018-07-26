@@ -39,41 +39,47 @@ rule unaligned_amino_acids:
     "python/trans_to_AA.py"
   output:
     "data/out/{patient_id}/V{v_gene}_unaligned_AA.fasta",
+    #"data/out/{patient_id}/V{v_gene}_corrected_nuc.fasta"
   shell:
     "python python/trans_to_AA.py -p {wildcards.patient_id} -g {wildcards.v_gene}"
 
-rule back_translation:
-  input:
-    "data/out/{patient_id}/V{v_gene}_unaligned_AA.fasta",
-    "python/AA_to_codon.py"
-  output:
-    "data/out/{patient_id}/V{v_gene}_codon.fasta",
-  shell:
-    "python python/AA_to_codon.py -p {wildcards.patient_id} -g {wildcards.v_gene}"
-
 rule alignments:
   input:
-    "data/out/{patient_id}/V{v_gene}_codon.fasta"
+    "data/out/{patient_id}/V{v_gene}_unaligned_AA.fasta"
   output:
     "data/out/{patient_id}/V{v_gene}_AA.fasta"
   shell:
     "mafft --amino {input} > {output}"
 
+rule codon_maker:
+  input:
+    "data/out/{patient_id}/V{v_gene}_AA.fasta",
+    "data/out/{patient_id}/V{v_gene}_unaligned.fasta",
+    "python/AA_to_codon.py"
+  output:
+    "data/out/{patient_id}/V{v_gene}_codon.fasta",
+  shell:
+    "python python/AA_to_codon.py -p {wildcards.patient_id} -g {wildcards.v_gene}"
+    
+    
+
 rule profile_alignment:
   input:
-    "data/out/{patient_id}/V{v_gene}_AA.fasta"
+    "data/out/{patient_id}/V{v_gene}_codon.fasta",
+    "data/input/Germline_nuc_V{v_gene}.fasta"
   output:
     "data/out/{patient_id}/V{v_gene}_profile.fasta"
   shell:
-    "mafft --add data/input/Germline_AA_{wildcards.v_gene}.fasta --reorder {input} > {output}"
+    "mafft --add data/input/Germline_nuc_V{wildcards.v_gene}.fasta --reorder {input[0]} > {output}"
+    
 
 rule trees:
   input:
-    "data/out/{patient_id}/V{v_gene}_AA.fasta"
+    "data/out/{patient_id}/V{v_gene}_codon.fasta"
   output:
     "data/out/{patient_id}/V{v_gene}.new"
   shell:
-    "FastTree {input} > {output}"
+    "FastTree -nt {input} > {output}"
 
 rule v_gene_json:
   input:
