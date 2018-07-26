@@ -45,8 +45,8 @@ r = []
 seqs_with_stops = []
 for seq_record in records:
     x = len(seq_record)%3.0
-    y = int(len(seq_record.translate()))
-    z = int(len(seq_record.translate(to_stop=True)))
+    y = int(len(seq_record.seq.translate()))
+    z = int(len(seq_record.seq.translate(to_stop=True)))
     if x == 0 and y == z:
         k.append(seq_record.description)
         q.append(seq_record.description)

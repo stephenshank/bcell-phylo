@@ -29,7 +29,7 @@ patient_id = args.patient
 v_gene = args.gene
 
 pro = 'data/out/%s/V%s_profile.fasta' % (patient_id, v_gene)
-germ = 'data/input/Germ_%s.fasta' % v_gene
+germ = 'data/input/Germline_nuc_V%s.fasta' % v_gene
 
 profile = list(SeqIO.parse(pro, 'fasta'))
 seq = list(SeqIO.parse(germ, 'fasta'))
@@ -53,7 +53,7 @@ CDR3_profile_coords = (int(index_map[CDR3_coords[0]-1]), int(index_map[CDR3_coor
 FR3_coords = FR3_dict['V'+str(v_gene)]
 FR3_profile_coords = (int(index_map[FR3_coords[0]-1]), int(index_map[FR3_coords[1]-1]))
 
-with open('data/out/%s/V%s.fasta' % (patient_id, v_gene) ) as file:
+with open((pro)) as file:
     fasta = file.read()
 with open('data/out/%s/V%s.new' % (patient_id, v_gene) ) as file:
     newick = file.read()
