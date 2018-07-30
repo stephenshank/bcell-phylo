@@ -5,7 +5,7 @@ import { LinkContainer } from 'react-router-bootstrap';
 import { Nav, Navbar, NavItem, NavDropdown, MenuItem, Grid } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 
-import Trees from './trees.js';
+import BCellPhylo from './bcell-phylo.js';
 import JSONs from './jsons.js';
 
 require('./main.css');
@@ -50,18 +50,26 @@ class App extends Component {
             </Navbar.Brand>
           </Navbar.Header>
           <Nav>
-            <NavDropdown title='Patient'>
+            <NavDropdown title='Patient' id='patient'>
               {this.patients.map(patient_id => {
                 const eventKey = { type: 'patient', value: patient_id };
-                return (<MenuItem eventKey={eventKey} active={this.state.patient == patient_id}>
+                return (<MenuItem
+                  eventKey={eventKey}
+                  active={this.state.patient == patient_id}
+                  key={patient_id}
+                >
                   {patient_id}
                 </MenuItem>);
                 }) }
             </NavDropdown>
-            <NavDropdown title='Gene'>
+            <NavDropdown title='Gene' id='patient'>
               {this.genes.map(gene => {
                 const eventKey = { type: 'gene', value: gene };
-                return (<MenuItem eventKey={eventKey} active={this.state.gene == gene}>
+                return (<MenuItem
+                  eventKey={eventKey}
+                  active={this.state.gene == gene}
+                  key={gene}
+                >
                   {gene}
                 </MenuItem>);
               }) }
@@ -69,7 +77,7 @@ class App extends Component {
           </Nav>
         </Navbar>
         <Grid fluid>
-          <Route exact path="/" render={ () => <Trees json={this.state.json} fasta={this.state.fasta} /> } />
+          <Route exact path="/" render={ () => <BCellPhylo json={this.state.json} /> } />
         </Grid>
       </div>
     </Router>);
