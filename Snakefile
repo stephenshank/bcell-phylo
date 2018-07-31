@@ -1,6 +1,5 @@
 PATIENT_IDS = ["28729", "48689", "67029", "77612", "78202", "93954", "99361", "99682", "GJS"]
 GENES = ["V1", "V2", "V3", "V4", "V5", "V6"] 
-#GENES = ["V1", "V2", "V3", "V4", "V5", "V6", "V7"] 
 
 rule all:
   input:
@@ -31,29 +30,52 @@ rule gene_unaligned_fasta:
     "data/out/{patient_id}/V4_unaligned.fasta",
     "data/out/{patient_id}/V5_unaligned.fasta",
     "data/out/{patient_id}/V6_unaligned.fasta",
-    "data/out/{patient_id}/V7_unaligned.fasta"
   shell:
     "python python/full_fasta_to_v-gene_separate_fasta.py -p {wildcards.patient_id}"
 
+rule unaligned_amino_acids:
+  input:
+    "data/out/{patient_id}/V{v_gene}_unaligned.fasta",
+    "python/trans_to_AA.py"
+  output:
+    "data/out/{patient_id}/V{v_gene}_unaligned_AA.fasta",
+    #"data/out/{patient_id}/V{v_gene}_corrected_nuc.fasta"
+  shell:
+    "python python/trans_to_AA.py -p {wildcards.patient_id} -g {wildcards.v_gene}"
+
 rule alignments:
   input:
-    "data/out/{patient_id}/V{v_gene}_unaligned.fasta"
+    "data/out/{patient_id}/V{v_gene}_unaligned_AA.fasta"
   output:
-    "data/out/{patient_id}/V{v_gene}.fasta"
+    "data/out/{patient_id}/V{v_gene}_AA.fasta"
   shell:
-    "mafft {input} > {output}"
+    "mafft --amino {input} > {output}"
+
+rule codon_maker:
+  input:
+    "data/out/{patient_id}/V{v_gene}_AA.fasta",
+    "data/out/{patient_id}/V{v_gene}_unaligned.fasta",
+    "python/AA_to_codon.py"
+  output:
+    "data/out/{patient_id}/V{v_gene}_codon.fasta",
+  shell:
+    "python python/AA_to_codon.py -p {wildcards.patient_id} -g {wildcards.v_gene}"
+    
+    
 
 rule profile_alignment:
   input:
-    "data/out/{patient_id}/V{v_gene}.fasta"
+    "data/out/{patient_id}/V{v_gene}_codon.fasta",
+    "data/input/Germline_nuc_V{v_gene}.fasta"
   output:
     "data/out/{patient_id}/V{v_gene}_profile.fasta"
   shell:
-    "mafft --add data/input/Germ_{wildcards.v_gene}.fasta --reorder {input} > {output}"
+    "mafft --add data/input/Germline_nuc_V{wildcards.v_gene}.fasta --reorder {input[0]} > {output}"
+    
 
 rule trees:
   input:
-    "data/out/{patient_id}/V{v_gene}.fasta"
+    "data/out/{patient_id}/V{v_gene}_codon.fasta"
   output:
     "data/out/{patient_id}/V{v_gene}.new"
   shell:
@@ -61,7 +83,7 @@ rule trees:
 
 rule v_gene_json:
   input:
-    "data/out/{patient_id}/V{v_gene}.fasta",
+    "data/out/{patient_id}/V{v_gene}_AA.fasta",
     "data/out/{patient_id}/V{v_gene}_profile.fasta",
     "data/out/{patient_id}/V{v_gene}.new",
     "python/json_for_dashboard.py"
