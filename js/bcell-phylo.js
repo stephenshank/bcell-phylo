@@ -11,7 +11,8 @@ import {
   BaseAlignment,
   fastaParser,
   ScrollBroadcaster,
-  SequenceAxis
+  SequenceAxis,
+  SiteAxis
 } from 'alignment.js';
 
 
@@ -62,6 +63,15 @@ function edgeStyler(element, edge) {
   element.style("stroke", stroke);
 }
 
+function guideEdgeStyler(element, edge) {
+  if(!d3.layout.phylotree.is_leafnode(edge.target)) {
+    return null
+  };
+  const time = get_time(edge.target),
+    stroke = colors[time];
+  element.style("stroke", stroke);
+}
+
 class BCellPhylo extends Component {
   constructor(props) {
     super(props);
@@ -74,15 +84,15 @@ class BCellPhylo extends Component {
     const { site_size } = nextProps;
     this.sequence_data = fastaParser(nextProps.json.fasta)
       .map(record => {
+        record.old_header = record.header;
         if (record.header.indexOf('Gene_V') > -1) return record;
         record.size = get_size(record, 'header');
         record.time = get_time(record, 'header');
         record.cdr3 = get_cdr3(record, 'header');
-        record.old_header = record.header;
-        //record.header = get_signature(record, 'header');
+        record.header = get_signature(record, 'header');
         return record;
       });
-    const number_of_sequences = this.sequence_data.length;
+    const number_of_sequences = this.sequence_data.length-1;
     this.tree_size = number_of_sequences * site_size;
     this.main_tree = d3.layout
       .phylotree()
@@ -91,7 +101,7 @@ class BCellPhylo extends Component {
         "top-bottom-spacing": "fit-to-size",
         "show-scale": false,
         "align-tips": true,
-        //"show-labels": false,
+        "show-labels": false,
         selectable: false
       })
       .style_edges(edgeStyler)
@@ -124,15 +134,18 @@ class BCellPhylo extends Component {
       .map(d => d.name);
 
     this.sequence_data.sort((a, b) => {
-      if(a.header.indexOf('Gene_V') > -1) return -1;
-      if(b.header.indexOf('Gene_V') > -1) return 1;
+      if(a.old_header.indexOf('Gene_V') > -1) return -1;
+      if(b.old_header.indexOf('Gene_V') > -1) return 1;
     
-      const a_index = ordered_leaf_names.indexOf(a.header),
-        b_index = ordered_leaf_names.indexOf(b.header);
+      const a_index = ordered_leaf_names.indexOf(a.old_header),
+        b_index = ordered_leaf_names.indexOf(b.old_header);
       return a_index - b_index;
     });
   }
   componentDidUpdate() {
+    const { sequence_data } = this;
+    const max_size = d3.max(sequence_data.slice(1).map(d=>d.size))
+
     this.main_tree.svg(d3.select("#alignmentjs-largeTreeAlignment")).layout();
 
     const guide_height = this.row_sizes[2],
@@ -156,33 +169,13 @@ class BCellPhylo extends Component {
         // disable selections on this tree
         selectable: false
       })
-      .style_edges(edgeStyler)
+      .style_edges(guideEdgeStyler)
       .size([guide_height, guide_width])
       .node_circle_size(0);
 
     this.guide_tree(this.parsed).layout();
 
-    this.guide_x_scale = d3.scale
-      .linear()
-      .domain([0, this.tree_size])
-      .range([0, guide_width]);
-    this.guide_y_scale = d3.scale
-      .linear()
-      .domain([0, this.tree_size])
-      .range([0, guide_height]);
-    this.rect = d3
-      .select("#alignmentjs-guideTree")
-      .append("rect")
-      .attr("x", 0)
-      .attr("y", 0)
-      .attr("id", "guide-rect")
-      .style("opacity", 0.8)
-      .style("stroke-width", "2px")
-      .style("stroke", "GoldenRod")
-      .style("fill", "yellow")
-      .attr("width", this.guide_x_scale(guide_width))
-      .attr("height", this.guide_y_scale(guide_height));
-     
+    
     const alignment_axis_width = this.column_sizes[4],
       alignment_axis_height  = this.row_sizes[0];
 
@@ -220,36 +213,168 @@ class BCellPhylo extends Component {
       bar_height = this.row_sizes[1];
 
     var bar_axis_svg = d3.select("#alignmentjs-bar-axis");
-    bar_axis_svg.html("");
     bar_axis_svg.attr("width", bar_width)
       .attr("height", bar_height);
 
-    const { sequence_data } = this;
-    console.log(sequence_data);
     var bar_scale = d3.scale.linear()
-      .domain([0, d3.max(sequence_data.slice(1).map(d=>d.size))])
-      .range([0, bar_width]);
+      .domain([0, max_size])
+      .range([10, bar_width-10]);
+
+    var bar_axis = d3.svg.axis()
+      .orient("top")
+      .scale(bar_scale)
+      .ticks(5);
 
     bar_axis_svg.append("g")
       .attr("class", "axis")
       .attr("transform", `translate(0, ${alignment_axis_height - 1})`)
-      .call(bar_scale);
+      .call(bar_axis);
 
     var bar_svg = d3.select("#alignmentjs-bar");
     bar_svg.attr("width", this.column_sizes[3])
       .attr("height", alignment_height);
 
-    //debugger;
     bar_svg.selectAll('rect')
       .data(sequence_data.slice(1))
       .enter()
         .append('rect')
-        .attr('x', 0)
+        .attr('x', 10)
         .attr('y', function(d,i) { return i*site_size; })
         .attr('width', function(d) { return bar_scale(d.size); })
         .attr('height', site_size)
         .attr('fill', function(d) { return colors[d.time]; });
       
+    const alignment_viewport_height = this.row_sizes[2],
+      alignment_viewport_width = this.column_sizes[4],
+      full_pixel_width = site_size * number_of_sites,
+      full_pixel_height = site_size * number_of_sequences;
+    const scroll_broadcaster = new ScrollBroadcaster(
+      { width: full_pixel_width, height: full_pixel_height },
+      { width: alignment_viewport_width, height: alignment_viewport_height },
+      { x_pixel: 0, y_pixel: 0 },
+      [
+        "alignmentjs-axis-div",
+        "germline-alignment",
+        "alignmentjs-guideTree-div",
+        "alignmentjs-largeTreeAlignment-div",
+        "alignmentjs-labels-div",
+        "alignmentjs-bar-div",
+        "alignmentjs-alignment"
+      ]
+    );
+
+    const guide_x_scale = d3.scale
+      .linear()
+      .domain([0, full_pixel_height])
+      .range([0, guide_width]);
+    const guide_y_scale = d3.scale
+      .linear()
+      .domain([0, full_pixel_height])
+      .range([0, guide_height]);
+    const rect = d3
+      .select("#alignmentjs-guideTree")
+      .append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("id", "guide-rect")
+      .style("opacity", 0.6)
+      .style("stroke-width", "1px")
+      .style("stroke", "GoldenRod")
+      .style("fill", "yellow")
+      .attr("width", guide_x_scale(guide_width))
+      .attr("height", guide_y_scale(guide_height));
+
+    scroll_broadcaster.setListeners();
+
+    $("#alignmentjs-guideTree-div").off("wheel");
+    $("#alignmentjs-guideTree-div").on("wheel", function(e) {
+      e.preventDefault();
+      const guide_x = +d3.select("#guide-rect").attr("x");
+      const new_guide_x = Math.min(
+        Math.max(guide_x + guide_x_scale(e.originalEvent.deltaX), 0),
+        guide_width - guide_x_scale(guide_width)
+      );
+
+      rect.attr("x", new_guide_x);
+
+      const guide_y = +d3.select("#guide-rect").attr("y");
+      const new_guide_y = Math.min(
+        Math.max(guide_y + guide_y_scale(e.originalEvent.deltaY), 0),
+        guide_height - guide_y_scale(guide_height)
+      );
+      rect.attr("y", new_guide_y);
+
+      const new_x_pixel = guide_x_scale.invert(new_guide_x),
+        new_y_pixel = guide_y_scale.invert(new_guide_y);
+      $("#alignmentjs-largeTreeAlignment-div").scrollLeft(new_x_pixel);
+      $("#alignmentjs-largeTreeAlignment-div").scrollTop(new_y_pixel);
+      $("#alignmentjs-bar-div").scrollTop(new_y_pixel);
+
+      const e_mock = {
+        originalEvent: {
+          deltaX: 0,
+          deltaY: e.originalEvent.deltaY
+        }
+      };
+      scroll_broadcaster.handleWheel(e_mock, "tree");
+    });
+
+    d3.select("#alignmentjs-guideTree").on("click", null);
+    d3.select("#alignmentjs-guideTree").on("click", function() {
+      const coords = d3.mouse(this),
+        new_x_pixel = guide_x_scale.invert(coords[0]),
+        new_y_pixel = guide_y_scale.invert(coords[1]),
+        current_x_fraction = scroll_broadcaster.x_fraction,
+        new_y_fraction = new_y_pixel / scroll_broadcaster.full_pixel_height;
+      scroll_broadcaster.broadcast(current_x_fraction, new_y_fraction);
+      rect.attr("x", coords[0]);
+      rect.attr("y", coords[1]);
+      $("#alignmentjs-largeTreeAlignment-div").scrollLeft(new_x_pixel);
+      $("#alignmentjs-largeTreeAlignment-div").scrollTop(new_y_pixel);
+      $("#alignmentjs-bar-div").scrollTop(new_y_pixel);
+    });
+
+    $("#alignmentjs-largeTreeAlignment-div").off("wheel");
+    $("#alignmentjs-largeTreeAlignment-div").on("wheel", function(e) {
+      const guide_x = +d3.select("#guide-rect").attr("x");
+      const new_guide_x = Math.min(
+        Math.max(guide_x + guide_x_scale(e.originalEvent.deltaX), 0),
+        guide_width - guide_x_scale(guide_width)
+      );
+      rect.attr("x", new_guide_x);
+
+      const guide_y = +d3.select("#guide-rect").attr("y");
+      const new_guide_y = Math.min(
+        Math.max(guide_y + guide_y_scale(e.originalEvent.deltaY), 0),
+        guide_height - guide_y_scale(guide_height)
+      );
+      rect.attr("y", new_guide_y);
+
+      const new_y_pixel = guide_y_scale.invert(new_guide_y);
+      $("#alignmentjs-bar-div").scrollTop(new_y_pixel);
+      const e_mock = {
+        originalEvent: {
+          deltaX: 0,
+          deltaY: e.originalEvent.deltaY
+        }
+      };
+      scroll_broadcaster.handleWheel(e_mock, "tree");
+    });
+
+    $("#alignmentjs-alignment").on("wheel", function(e) {
+      e.preventDefault();
+      const guide_y = +d3.select("#guide-rect").attr("y");
+      const new_guide_y = Math.min(
+        Math.max(guide_y + guide_y_scale(e.originalEvent.deltaY), 0),
+        guide_height - guide_y_scale(guide_height)
+      );
+      rect.attr("y", new_guide_y);
+      const new_y_pixel = guide_y_scale.invert(new_guide_y);
+      $("#alignmentjs-bar-div").scrollTop(new_y_pixel);
+      $("#alignmentjs-largeTreeAlignment-div").scrollTop(new_y_pixel);
+      scroll_broadcaster.handleWheel(e, "alignment");
+    });
+
   }
   render(){
     if (!this.props.json) {
@@ -268,6 +393,7 @@ class BCellPhylo extends Component {
       { text: 'Visit 3, replicate 1', color: 'purple' },
       { text: 'Visit 3, replicate 2', color: 'plum' }
     ];
+    this.sequence_data.number_of_sites = this.sequence_data[0].seq.length;
     return (<Row>
       <Col xs={12}>
         <div id='main_viz' style={container_style}>
@@ -284,11 +410,13 @@ class BCellPhylo extends Component {
             <svg width={this.props.guide_size} height={this.props.guide_size} id='guide-tree' />
           </div>
 
-        <div></div>
+        <div style={{textAlign: "center"}}><p>Family size</p></div>
 
-        <div className="tree-scale-bar" style={{overflowX: "scroll"}}>
-          <svg id="alignmentjs-alignment-axis" />
-        </div>
+        <SiteAxis
+          width={this.column_sizes[4]}
+          height={this.row_sizes[0]}
+          sequence_data={this.sequence_data}
+        />
 
         <div id="alignmentjs-bar-axis-div">
           <svg id="alignmentjs-bar-axis" />
@@ -298,6 +426,7 @@ class BCellPhylo extends Component {
           width={this.column_sizes[4]}
           height={this.row_sizes[1]}
           sequence_data={[this.sequence_data[0]]}
+          disableVerticalScrolling
           id='germline'
         />
 
