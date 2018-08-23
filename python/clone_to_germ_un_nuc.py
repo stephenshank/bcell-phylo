@@ -1,11 +1,10 @@
 import argparse
 import re
-
 from Bio import SeqIO
 
 
 parser = argparse.ArgumentParser(
-    description='Extracts the different V genes from a given patient'
+    description='Extracts the different V genes from a given patient at one particular timepoint'
 )
 
 parser.add_argument(
@@ -40,3 +39,4 @@ for i, v_sequences in enumerate(all_v_sequences):
 
 bad_search_text = '\n'.join(bad_searches)
 print('%d searches were bad: %s' % ( len(bad_searches), bad_search_text) )
+
