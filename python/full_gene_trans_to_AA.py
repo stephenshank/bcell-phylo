@@ -119,3 +119,17 @@ for e in uni_v:
                 out.write("{}{}\n{}\n".format('>',str(i),str(trans)))
         else:
             next
+            
+
+outfile = 'data/out/%s/V%s_unique.txt' % (patient_id,v_gene)
+with open(outfile, 'w') as out:
+    for i in uni_v:
+        out.write("%s\n" % i)
+         
+         
+         
+         
+         
+         
+         
+         

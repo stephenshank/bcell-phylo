@@ -48,18 +48,15 @@ rule unaligned_to_amino_acids:
   shell:
     "python python/full_gene_trans_to_AA.py -p {wildcards.patient_id} -g {wildcards.v_gene}"
 
+############## testing this out with python inside
 ######################## probably wont work now 
 rule alignments:
   input:
     "data/out/{patient_id}/V{v_gene}_unaligned_corrected_AA.fasta",
-    "data/out/{patient_id}/V{v_gene}_unaligned_corrected_nuc.fasta",
-    "data/out/{patient_id}/{rearrangement}_unaligned_corrected_AA.fasta",
-    "data/out/{patient_id}/{rearrangement}_unaligned_corrected_nuc.fasta" 
+    #"data/out/{patient_id}/{rearrangement}_unaligned_corrected_AA.fasta",
   output:
     "data/out/{patient_id}/V{v_gene}_aligned_AA.fasta",
-    "data/out/{patient_id}/V{v_gene}_aligned_nuc.fasta",
-    "data/out/{patient_id}/{rearrangement}_aligned_AA.fasta",
-    "data/out/{patient_id}/{rearrangement}_aligned_nuc.fasta",
+    #"data/out/{patient_id}/{rearrangement}_aligned_AA.fasta",
   shell:
     "mafft --amino {input} > {output}"
 
@@ -67,8 +64,8 @@ rule codon_maker:
   input:
     "data/out/{patient_id}/V{v_gene}_aligned_AA.fasta",
     "data/out/{patient_id}/V{v_gene}_unaligned_corrected_nuc.fasta",
-    "data/out/{patient_id}/{rearrangement}_aligned_AA.fasta",
-    "data/out/{patient_id}/{rearrangement}_unaligned_corrected_nuc.fasta",
+    #"data/out/{patient_id}/{rearrangement}_aligned_AA.fasta",
+    #"data/out/{patient_id}/{rearrangement}_unaligned_corrected_nuc.fasta",
     "python/AA_to_codon.py"
   output:
     "data/out/{patient_id}/V{v_gene}_codon.fasta",
