@@ -43,12 +43,14 @@ k = []
 j = []
 q = []
 r = []
+s = []
 seqs_with_stops = []
 for seq_record in records:
     x = len(seq_record)%3.0
     y = int(len(seq_record.seq.translate()))
     z = int(len(seq_record.seq.translate(to_stop=True)))
-    if x == 0 and y == z:
+    s = int(len(seq_record.id.split('_')[4].split(',')[0].replace('/', '-')))
+    if x == 0 and y == z and s > 2:
         k.append(seq_record.description)
         q.append(seq_record.description)
         r.append(Seq(str(seq_record.seq)))
@@ -67,8 +69,8 @@ with open('data/out/%s/V%s_unaligned_corrected_nuc.fasta' % (patient_id, v_gene)
     for line in lines:
         file.write("{}{}\n{}\n".format( '>', line[0], line[1]))
         
-        
-        
+###################################################################
+## dont know if i need this for anything else ######################          
         
 ####### this is now going to separate into the rearrangements #####
 
@@ -80,13 +82,15 @@ ids = []
 nuc_seqs = []
 for seq_record in records:
     if '/' in seq_record.id:
-        temp = seq_record.id.split('_')[4].split(',')[0].replace('/', '-')
+        ## this will now NOT grab different alleles
+        temp = seq_record.id.split('_')[4].split(',')[0].split('*')[0].replace('/', '-')
+        #temp = seq_record.id.split('_')[4].split(',')[0].replace('/', '-')
         v.append(temp)
         temp2 = seq_record.id.replace('/', '-')
         ids.append(str(temp2))
         nuc_seqs.append(str(seq_record.seq))
     else:
-        v.append(seq_record.id.split('_')[4].split(',')[0])
+        v.append(seq_record.id.split('_')[4].split(',')[0].split('*')[0])
         ids.append(str(seq_record.id))
         nuc_seqs.append(str(seq_record.seq))
         
