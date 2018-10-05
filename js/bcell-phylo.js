@@ -153,7 +153,7 @@ class BCellPhylo extends Component {
 
       this.main_tree.resort_children(function(a, b) {
         return a["count_depth"] - b["count_depth"];
-      }, true);
+      }, null, null, true);
 
       const ordered_leaf_names = this.main_tree
         .get_nodes(true)
