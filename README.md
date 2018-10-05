@@ -22,10 +22,10 @@ yarn
 
 ## Pipeline
 
-Obtain a copy of the compressed input data, `bcell-phylo_Ver2.tar.gz`, and place in the input data directory via
+Obtain a copy of the compressed input data, `bcell-phylo_Ver3.tar.gz`, and place in the `data` directory via:
 
 ```
-tar xvzf /path/to/bcell-phylo_Ver2.tar.gz -C data/input/
+mv /path/to/bcell-phylo_Ver3.tar.gz -C data/
 ```
 
 After installing requirements, run the pipeline from the bcell-phylo directory:
