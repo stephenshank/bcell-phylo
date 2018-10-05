@@ -48,8 +48,8 @@ bad_sequences = 0
 with open(output_path, 'w') as output_file:
     for i, item in enumerate(it.chain.from_iterable(data)):
         if int(item["size"]) > size:
-            t = Seq(item["tag"]).split('|')[1] #this should be nuc seq
-            j = str(item["tag"]).split('|')[0] #this should be vdj
+            t = Seq(item["tag"]).split('|')[1] #this (should be) nuc seq
+            j = str(item["tag"]).split('|')[0] #this (should be) vdj
             c_list = str(item["centroid"]).split(':')
             c = c_list[-1]
             try:
