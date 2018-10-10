@@ -4,8 +4,8 @@
 
 ### Requirements
 
-- Anaconda 
-- R 
+- SnakeMake
+- Anaconda  
 - Python 
 - [mafft](https://mafft.cbrc.jp/alignment/software/)
 - [FastTree](http://www.microbesonline.org/fasttree/)
@@ -22,10 +22,10 @@ yarn
 
 ## Pipeline
 
-Obtain a copy of the compressed input data, `patients_clones.tar.gz`, and place in the input data directory via
+Obtain a copy of the compressed input data, `bcell-phylo_Ver3.tar.gz`, and place in the `data` directory via:
 
 ```
-tar xvzf /path/to/patients_clones.tar.gz -C data/input/
+mv /path/to/bcell-phylo_Ver3.tar.gz -C data/
 ```
 
 After installing requirements, run the pipeline from the bcell-phylo directory:

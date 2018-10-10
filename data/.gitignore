@@ -1,4 +1,4 @@
+*.tar.gz
 *.fasta
-*.new
 *.json
-*.csv
+*.new

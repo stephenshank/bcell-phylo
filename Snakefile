@@ -1,93 +1,104 @@
+from python import *
+
+
 PATIENT_IDS = ["28729", "48689", "67029", "77612", "78202", "93954", "99361", "99682", "GJS"]
-GENES = ["V1", "V2", "V3", "V4", "V5", "V6"] 
+CLONES = ["1", "2", "3", "4", "5", "6"]
+GENES = [
+  "1", "1-18", "1-2", "1-24", "1-3", "1-46", "1-69", "1-69-2", "1-69D", "1-8", "1-45", "1-58",
+  "2", "2-5", "2-70", "2-26",
+  "3", "3-11", "3-13", "3-15", "3-20", "3-21", "3-23", "3-30-3", "3-33", "3-43", "3-48", "3-49", "3-53", "3-64", "3-66", "3-7", "3-72", "3-9", "3-43D", "3-73", "3-74",
+  "4", "4-30-2", "4-30-4", "4-31", "4-34", "4-38-2", "4-39", "4-4", "4-59", "4-61",
+  "5", "5-51", "5-10-1",
+  "6", "6-1"
+]
 
 rule all:
   input:
-    expand("data/out/{patient_id}/{v_gene}.json", patient_id=PATIENT_IDS, v_gene=GENES)
+    expand("data/{patient_id}/V{v_gene}.json", patient_id=PATIENT_IDS, v_gene=GENES, clone=CLONES)
 
-rule clone_unaligned_fasta:
+rule unpacked:
   input:
-    "data/input/{patient_id}_{clone}_clone.json",
-    "python/json_to_unaligned_fasta.py"
+    "data/bcell-phylo_Ver3.tar.gz"
   output:
-    "data/out/{patient_id}/clone_{clone}_unaligned.fasta"
+    expand("data/input/{patient_id}_{clone}_clone.json", patient_id=PATIENT_IDS, clone=CLONES),
+    expand("data/input/Germline_nuc_V{gene}.fasta", gene=GENES)
   shell:
-    "python python/json_to_unaligned_fasta.py -p {wildcards.patient_id} -c {wildcards.clone} --size 30"
+    "tar xvzf {input} -C data/input"
 
-rule gene_unaligned_fasta:
+rule clone_json_to_unaligned_fasta:
   input:
-    "data/out/{patient_id}/clone_1_unaligned.fasta",
-    "data/out/{patient_id}/clone_2_unaligned.fasta",
-    "data/out/{patient_id}/clone_3_unaligned.fasta",
-    "data/out/{patient_id}/clone_4_unaligned.fasta",
-    "data/out/{patient_id}/clone_5_unaligned.fasta",
-    "data/out/{patient_id}/clone_6_unaligned.fasta",
-    "python/full_fasta_to_v-gene_separate_fasta.py"
+    json="data/input/{patient_id}_{clone}_clone.json"
   output:
-    "data/out/{patient_id}/V1_unaligned.fasta",
-    "data/out/{patient_id}/V2_unaligned.fasta",
-    "data/out/{patient_id}/V3_unaligned.fasta",
-    "data/out/{patient_id}/V4_unaligned.fasta",
-    "data/out/{patient_id}/V5_unaligned.fasta",
-    "data/out/{patient_id}/V6_unaligned.fasta",
-  shell:
-    "python python/full_fasta_to_v-gene_separate_fasta.py -p {wildcards.patient_id}"
+    fasta="data/{patient_id}/clone_{clone}_unaligned.fasta"
+  run:
+    clone_json_to_unaligned_fasta(input.json, output.fasta, wildcards.clone)
 
-rule unaligned_amino_acids:
+rule separate_into_regions:
   input:
-    "data/out/{patient_id}/V{v_gene}_unaligned.fasta",
-    "python/trans_to_AA.py"
+    fasta=expand("data/{{patient_id}}/clone_{clone}_unaligned.fasta", clone=CLONES)
   output:
-    "data/out/{patient_id}/V{v_gene}_unaligned_AA.fasta",
-    #"data/out/{patient_id}/V{v_gene}_corrected_nuc.fasta"
-  shell:
-    "python python/trans_to_AA.py -p {wildcards.patient_id} -g {wildcards.v_gene}"
+    fasta="data/{patient_id}/V{v_gene}_unaligned.fasta"
+  run:
+    separate_into_regions(input.fasta, output.fasta, wildcards.v_gene)
+
+rule protein_and_corrected_dna:
+  input:
+    fasta="data/{patient_id}/V{v_gene}_unaligned.fasta",
+  output:
+    aa="data/{patient_id}/V{v_gene}_unaligned_corrected_AA.fasta",
+    nuc="data/{patient_id}/V{v_gene}_unaligned_corrected_nuc.fasta"
+  run:
+    protein_and_corrected_dna(input.fasta, output.aa, output.nuc)
 
 rule alignments:
   input:
-    "data/out/{patient_id}/V{v_gene}_unaligned_AA.fasta"
+    rules.protein_and_corrected_dna.output.aa
   output:
-    "data/out/{patient_id}/V{v_gene}_AA.fasta"
+    "data/{patient_id}/V{v_gene}_aligned_AA.fasta",
   shell:
     "mafft --amino {input} > {output}"
 
 rule codon_maker:
   input:
-    "data/out/{patient_id}/V{v_gene}_AA.fasta",
-    "data/out/{patient_id}/V{v_gene}_unaligned.fasta",
-    "python/AA_to_codon.py"
+    aligned_aa=rules.alignments.output[0],
+    unaligned_nucleotide=rules.protein_and_corrected_dna.output.nuc
   output:
-    "data/out/{patient_id}/V{v_gene}_codon.fasta",
-  shell:
-    "python python/AA_to_codon.py -p {wildcards.patient_id} -g {wildcards.v_gene}"
-    
-    
+    codon="data/{patient_id}/V{v_gene}_codon.fasta",
+  run:
+    protein_alignment_to_codon_alignment(input.aligned_aa, input.unaligned_nucleotide, output.codon)
 
 rule profile_alignment:
   input:
-    "data/out/{patient_id}/V{v_gene}_codon.fasta",
-    "data/input/Germline_nuc_V{v_gene}.fasta"
+    codon=rules.codon_maker.output.codon,
+    germline="data/input/Germline_nuc_V{v_gene}.fasta"
   output:
-    "data/out/{patient_id}/V{v_gene}_profile.fasta"
+    profile="data/{patient_id}/V{v_gene}_profile.fasta"
   shell:
-    "mafft --add data/input/Germline_nuc_V{wildcards.v_gene}.fasta --reorder {input[0]} > {output}"
-    
+    "mafft --add {input.germline} --reorder {input.codon} > {output.profile}"  
+
+rule gap_trimmer:
+  input:
+    codon=rules.codon_maker.output.codon,
+  output:
+    trimmed="data/{patient_id}/V{v_gene}_ungapped.fasta",
+  run:
+    gap_trimmer(input.codon, output.trimmed)
 
 rule trees:
   input:
-    "data/out/{patient_id}/V{v_gene}_codon.fasta"
+    fasta=rules.gap_trimmer.output.trimmed
   output:
-    "data/out/{patient_id}/V{v_gene}.new"
+    tree="data/{patient_id}/V{v_gene}.new"
   shell:
-    "FastTree -nt {input} > {output}"
+    "FastTree -nt {input.fasta} > {output.tree}"
 
 rule v_gene_json:
   input:
-    "data/out/{patient_id}/V{v_gene}_AA.fasta",
-    "data/out/{patient_id}/V{v_gene}_profile.fasta",
-    "data/out/{patient_id}/V{v_gene}.new",
-    "python/json_for_dashboard.py"
+    profile=rules.profile_alignment.output.profile,
+    tree=rules.trees.output.tree,
+    germline=rules.profile_alignment.input.germline
   output:
-    "data/out/{patient_id}/V{v_gene}.json"
-  shell:
-    "python python/json_for_dashboard.py -p {wildcards.patient_id} -g {wildcards.v_gene}"
+    json="data/{patient_id}/V{v_gene}.json"
+  run:
+    json_for_dashboard(input.profile, input.tree, input.germline, output.json, wildcards)
+
