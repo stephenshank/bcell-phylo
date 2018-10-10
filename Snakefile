@@ -14,7 +14,12 @@ GENES = [
 
 rule all:
   input:
-    expand("data/{patient_id}/V{v_gene}.json", patient_id=PATIENT_IDS, v_gene=GENES, clone=CLONES)
+    expand(
+      "data/{patient_id}/V{v_gene}.json",
+      patient_id=PATIENT_IDS,
+      v_gene=GENES,
+      clone=CLONES
+    )
 
 rule unpacked:
   input:

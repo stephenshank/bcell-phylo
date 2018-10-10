@@ -436,7 +436,7 @@ class BCellPhylo extends Component {
     this.sequence_data.number_of_sites = this.sequence_data[0].seq.length;
     return (<Row>
       <Col xs={12}>
-        <h4>Patient {this.props.json.patient}, gene {this.props.json.gene}</h4>
+        <h4>Patient {this.props.json.patient}, gene {this.props.json.gene}, fragment {this.props.json.fragment}</h4>
         <div id='main_viz' style={container_style}>
 
           <div style={{gridArea: "1 / 1 / 3 / 4"}}>
