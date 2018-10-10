@@ -112,7 +112,7 @@ class BCellPhylo extends Component {
       this.sequence_data = fastaParser(nextProps.json.fasta)
         .map(record => {
           record.old_header = record.header;
-          if (record.header.indexOf('Gene_V') > -1) return record;
+          if (record.header.indexOf('Germline_') > -1) return record;
           record.size = get_size(record, 'header');
           record.time = get_time(record, 'header');
           record.cdr3 = get_cdr3(record, 'header');
@@ -158,14 +158,16 @@ class BCellPhylo extends Component {
       const ordered_leaf_names = this.main_tree
         .get_nodes(true)
         .filter(d3.layout.phylotree.is_leafnode)
-        .map(d => d.name);
+        .map(d => d.name.split('_')[0]);
 
       this.sequence_data.sort((a, b) => {
-        if(a.old_header.indexOf('Gene_V') > -1) return -1;
-        if(b.old_header.indexOf('Gene_V') > -1) return 1;
+        if(a.old_header.indexOf('Germline_') > -1) return -1;
+        if(b.old_header.indexOf('Germline_') > -1) return 1;
       
-        const a_index = ordered_leaf_names.indexOf(a.old_header),
-          b_index = ordered_leaf_names.indexOf(b.old_header);
+        const a_header = a.old_header.split('_')[0],
+          b_header = b.old_header.split('_')[0],
+          a_index = ordered_leaf_names.indexOf(a_header),
+          b_index = ordered_leaf_names.indexOf(b_header);
         return a_index - b_index;
       });
     }
