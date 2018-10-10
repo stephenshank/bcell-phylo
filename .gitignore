@@ -111,3 +111,5 @@ node_modules
 .DS_Store
 
 .snakemake
+.yalc
+yalc.lock

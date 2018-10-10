@@ -30,6 +30,10 @@ for clone in [1, 2, 3, 4, 5, 6]:
         regex_search = v_gene_regex.search(sequence.id)
         if not regex_search is None:
             v_gene = int(regex_search.group(1))
+            sequence.id = sequence.id.replace(',', '-')
+            sequence.name = ''
+            sequence.description = ''
+            assert not ',' in sequence.id
             all_v_sequences[v_gene-1].append(sequence)
         else:
             bad_searches.append(sequence.id)
