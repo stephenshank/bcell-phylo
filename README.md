@@ -16,7 +16,6 @@
 ```
 conda env create -f environment.yml
 source activate bcell
-bash install.sh
 yarn
 ```
 
