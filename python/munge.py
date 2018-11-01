@@ -184,20 +184,3 @@ def window_gap_trimmer(input_profile, output_fasta, output_json, wildcards):
       for line in lines:
              file.write("{}{}\n{}\n".format( '>', line[0], line[1]))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

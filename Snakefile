@@ -16,8 +16,7 @@ rule all:
   input:
     expand(
       "data/{patient_id}/V{v_gene}.json",
-      #patient_id=PATIENT_IDS,
-      patient_id='77612',
+      patient_id=PATIENT_IDS,
       v_gene=GENES,
       clone=CLONES
     )
@@ -92,12 +91,12 @@ rule gap_trimmer:
 
 rule window_gap_trimmer:
   input:
-    pro_gap=rules.profile_alignment.output.profile
+    fasta=rules.profile_alignment.output.profile
   output:
-    pro_trim_fas="data/{patient_id}/V{v_gene}_pro_ungapped.fasta",
-    pro_trim_json="data/{patient_id}/V{v_gene}_pro_ungapped.json"
+    fasta="data/{patient_id}/V{v_gene}_pro_ungapped.fasta",
+    json="data/{patient_id}/V{v_gene}_pro_ungapped.json"
   run:
-    window_gap_trimmer(input.pro_gap, output.pro_trim_fas, output.pro_trim_json, wildcards)
+    window_gap_trimmer(input.fasta, output.fasta, output.json, wildcards)
 
 rule trees:
   input:
@@ -109,13 +108,12 @@ rule trees:
 
 rule v_gene_json:
   input:
-    profile=rules.profile_alignment.output.profile,
-    window_trim_fas=rules.window_gap_trimmer.output.pro_trim_fas,
-    window_trim_json=rules.window_gap_trimmer.output.pro_trim_json,
+    fasta=rules.window_gap_trimmer.output.fasta,
+    json=rules.window_gap_trimmer.output.json,
     tree=rules.trees.output.tree,
     germline=rules.profile_alignment.input.germline
   output:
     json="data/{patient_id}/V{v_gene}.json"
   run:
-    json_for_dashboard(input.profile, input.window_trim_fas, input.window_trim_json, input.tree, input.germline, output.json, wildcards)
+    json_for_dashboard(input.fasta, input.json, input.tree, input.germline, output.json, wildcards)
 
