@@ -1,11 +1,9 @@
 import json
 
 
-def json_for_dashboard(input_fasta, input_json, tree, germline, output, wildcards):
+def json_for_dashboard(input_fasta, input_json, tree, output, wildcards):
     with open(input_json, 'r') as input_file:
-         temp = json.load(input_file)
-    CDR3_profile_coords = ['CDR3']
-    FR3_profile_coords = ['FR3']
+         indices = json.load(input_file)
 
     with open(input_fasta) as file:
         fasta = file.read()
@@ -15,8 +13,8 @@ def json_for_dashboard(input_fasta, input_json, tree, germline, output, wildcard
     output_dict = {
         'fasta': fasta,
         'newick': newick,
-        'CDR3': CDR3_profile_coords,
-        'FR3': FR3_profile_coords
+        'CDR3': indices['CDR3'],
+        'FR3': indices['FR3']
     }
 
     with open(output, 'w') as file:

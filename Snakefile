@@ -11,6 +11,10 @@ GENES = [
   "5", "5-51", "5-10-1",
   "6", "6-1"
 ]
+IMGT_IDS = [
+  "M99637", "M99641", "M99642", "M99652",  "M99653",  "M99654"
+]
+
 
 rule all:
   input:
@@ -45,6 +49,22 @@ rule unique_vs:
     "data/unique_vs.json"
   run:
     get_unique_vs(PATIENT_IDS, CLONES)
+
+rule imgt_records:
+  input:
+    dat="data/input/imgt.dat"
+  run:
+    extract_imgt_records(input.dat, IMGT_IDS)
+
+rule imgt_information:
+  input:
+    raw="data/imgt/V{v_gene}/raw.txt"
+  output:
+    nucleotide_fasta="data/imgt/V{v_gene}/nucleotide.fasta",
+    protein_fasta="data/imgt/V{v_gene}/protein.fasta",
+    json="data/imgt/V{v_gene}/data.json"
+  run:
+    parse_imgt_record(input.raw, output.nucleotide_fasta, output.protein_fasta, output.json, wildcards.v_gene)
 
 rule separate_into_regions:
   input:
@@ -82,12 +102,12 @@ rule codon_maker:
 
 rule profile_alignment:
   input:
-    codon=rules.codon_maker.output.codon,
-    germline="data/input/Germline_nuc_V{v_gene}.fasta"
+    codon=rules.alignments.output[0],
+    germline=rules.imgt_information.output.protein_fasta
   output:
-    profile="data/{patient_id}/V{v_gene}_profile.fasta"
+    fasta="data/{patient_id}/V{v_gene}_profile.fasta"
   shell:
-    "mafft --add {input.germline} --reorder {input.codon} > {output.profile}"  
+    "mafft --add {input.germline} --reorder {input.codon} > {output.fasta}"  
 
 rule gap_trimmer:
   input:
@@ -97,14 +117,14 @@ rule gap_trimmer:
   run:
     gap_trimmer(input.codon, output.trimmed)
 
-rule window_gap_trimmer:
+rule indicial_mapper:
   input:
-    fasta=rules.profile_alignment.output.profile
+    fasta=rules.profile_alignment.output.fasta,
+    json=rules.imgt_information.output.json
   output:
-    fasta="data/{patient_id}/V{v_gene}_pro_ungapped.fasta",
-    json="data/{patient_id}/V{v_gene}_pro_ungapped.json"
+    json="data/{patient_id}/V{v_gene}_indices.json"
   run:
-    window_gap_trimmer(input.fasta, output.fasta, output.json, wildcards)
+    indicial_mapper(input.fasta, input.json, output.json, wildcards.v_gene)
 
 rule trees:
   input:
@@ -116,12 +136,11 @@ rule trees:
 
 rule v_gene_json:
   input:
-    fasta=rules.window_gap_trimmer.output.fasta,
-    json=rules.window_gap_trimmer.output.json,
+    fasta=rules.profile_alignment.output.fasta,
+    json=rules.indicial_mapper.output.json,
     tree=rules.trees.output.tree,
-    germline=rules.profile_alignment.input.germline
   output:
     json="data/{patient_id}/V{v_gene}.json"
   run:
-    json_for_dashboard(input.fasta, input.json, input.tree, input.germline, output.json, wildcards)
+    json_for_dashboard(input.fasta, input.json, input.tree, output.json, wildcards)
 

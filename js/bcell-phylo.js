@@ -18,33 +18,51 @@ import {
 
 require("phylotree");
 
-const nucleotide_colors = {
-    a: "LightPink",
-    g: "LemonChiffon",
-    t: "LightBlue",
-    c: "MediumPurple",
-    n: "DarkGrey",
-    A: "LightPink",
-    G: "LemonChiffon",
-    T: "LightBlue",
-    C: "MediumPurple",
-    N: "DarkGrey",
-    "-": "lightgrey"
-  },
-  nucleotide_text_colors = {
-    a: "Red",
-    g: "GoldenRod",
-    t: "Blue",
-    c: "DarkMagenta",
-    n: "black",
-    A: "Red",
-    G: "GoldenRod",
-    T: "Blue",
-    C: "DarkMagenta",
-    N: "black",
-    "-": "DarkGrey"
+const protein_colors = {
+    "-": "Snow",
+    a: "lightblue",
+    c: "pink",
+    d: "LightSteelBlue",
+    e: "purple",
+    f: "AntiqueWhite",
+    g: "LightSalmon",
+    h: "CadetBlue",
+    i: "Crimson",
+    k: "DarkCyan",
+    l: "DarkKhaki",
+    m: "steelblue",
+    r: "DarkSeaGreen",
+    p: "yellow",
+    q: "lightgreen",
+    r: "orange",
+    s: "green",
+    t: "DeepSkyBlue",
+    v: "Gold",
+    w: "HotPink",
+    x: "black",
+    y: "IndianRed",
+    A: "lightblue",
+    C: "pink",
+    D: "LightSteelBlue",
+    E: "purple",
+    F: "AntiqueWhite",
+    G: "LightSalmon",
+    H: "CadetBlue",
+    I: "Crimson",
+    K: "DarkCyan",
+    L: "DarkKhaki",
+    M: "steelblue",
+    N: "DarkSeaGreen",
+    P: "yellow",
+    Q: "lightgreen",
+    R: "orange",
+    S: "green",
+    T: "DeepSkyBlue",
+    V: "Gold",
+    W: "HotPink",
+    X: "DarkGrey",
+    Y: "IndianRed"
   };
-
 
 const colors = ['red', 'pink', 'blue', 'lightblue', 'purple', 'plum'];
 
@@ -420,18 +438,24 @@ class BCellPhylo extends Component {
       { text: 'Visit 3, replicate 1', color: 'purple' },
       { text: 'Visit 3, replicate 2', color: 'plum' }
     ],
-    { CDR3 } = this.props.json,
-    highlight_cdr3_color = (character, position, header) => {
-      if(position >= CDR3[0] && position <= CDR3[1]) {
-        return nucleotide_text_colors[character];
+    { CDR3, FR3 } = this.props.json,
+    highlight_roi_color = (character, position, header) => {
+      const in_cdr3_region = position >= CDR3[0] && position <= CDR3[1],
+        in_fr3_region = position >= FR3[0] && position <= FR3[1],
+        in_region_of_interest = in_cdr3_region || in_fr3_region;
+      if(in_region_of_interest) {
+        return character.toUpperCase() != "X" ? "black" : "white";
       }
-      return nucleotide_colors[character];
+      return protein_colors[character];
     },
-    highlight_cdr3_text_color = (character, position, header) => {
-      if(position >= CDR3[0] && position <= CDR3[1]) {
-        return nucleotide_colors[character];
+    highlight_roi_text_color = (character, position, header) => {
+      const in_cdr3_region = position >= CDR3[0] && position <= CDR3[1],
+        in_fr3_region = position >= FR3[0] && position <= FR3[1],
+        in_region_of_interest = in_cdr3_region || in_fr3_region;
+      if(in_region_of_interest) {
+        return protein_colors[character];
       }
-      return nucleotide_text_colors[character];
+      return character.toUpperCase() != "X" ? "black" : "white";
     };
     this.sequence_data.number_of_sites = this.sequence_data[0].seq.length;
     return (<Row>
@@ -468,8 +492,8 @@ class BCellPhylo extends Component {
           height={this.row_sizes[1]}
           sequence_data={[this.sequence_data[0]]}
           disableVerticalScrolling
-          site_color={highlight_cdr3_color}
-          text_color={highlight_cdr3_text_color}
+          site_color={highlight_roi_color}
+          text_color={highlight_roi_text_color}
           id='germline'
         />
 
@@ -498,8 +522,8 @@ class BCellPhylo extends Component {
           width={this.column_sizes[4]}
           height={this.row_sizes[2]}
           sequence_data={this.sequence_data.slice(1)}
-          site_color={highlight_cdr3_color}
-          text_color={highlight_cdr3_text_color}
+          site_color={highlight_roi_color}
+          text_color={highlight_roi_text_color}
         />
 
         </div>

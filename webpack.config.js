@@ -6,7 +6,7 @@ module.exports = {
   entry: path.resolve('js', 'index.js'),
   plugins: [
     new HtmlWebpackPlugin({
-      title: "VEG Immunology Visualizations"
+      title: "ACME Immunology Visualizations"
     }),
     new webpack.ProvidePlugin({
       d3: "d3",
