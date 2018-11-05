@@ -1,3 +1,4 @@
+import itertools as it
 import re
 import collections
 import json
@@ -18,6 +19,21 @@ def get_rearrangements(wildcards):
     rearrangements_prefixes = open(gene_fn).readlines()
     rearrangement_fns = [directory + prefix.strip() +  "_unaligned_corrected_AA.fasta" for prefix in rearrangements_prefixes]
     return rearrangement_fns
+
+
+def get_unique_vs(patients, clones):
+    vs = []
+    for patient_id in patients:
+        for clone in clones:
+            json_filename = 'data/input/%s_%s_clone.json' % (patient_id, clone) 
+            with open(json_filename) as json_file:
+                data = json.load(json_file)
+            all_entries = it.chain.from_iterable(data)
+            vs += [re.split(',|\*|\|', entry['tag'])[0] for entry in all_entries]
+    unique_vs = list(set(vs))
+    unique_vs.sort()
+    with open('data/unique_vs.json', 'w') as output_file:
+        json.dump(unique_vs, output_file)
 
 
 def clone_json_to_unaligned_fasta(input, output, clone):

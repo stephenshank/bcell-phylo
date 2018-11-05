@@ -38,6 +38,14 @@ rule clone_json_to_unaligned_fasta:
   run:
     clone_json_to_unaligned_fasta(input.json, output.fasta, wildcards.clone)
 
+rule unique_vs:
+  input:
+    expand("data/input/{patient_id}_{clone}_clone.json", patient_id=PATIENT_IDS, clone=CLONES),
+  output:
+    "data/unique_vs.json"
+  run:
+    get_unique_vs(PATIENT_IDS, CLONES)
+
 rule separate_into_regions:
   input:
     fasta=expand("data/{{patient_id}}/clone_{clone}_unaligned.fasta", clone=CLONES)
