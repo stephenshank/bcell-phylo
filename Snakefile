@@ -77,9 +77,17 @@ rule separate_into_regions:
   run:
     separate_into_regions(input.fasta, output.fasta, wildcards.v_gene)
 
+rule collapse_identical_sequences:
+  input:
+    fasta=rules.separate_into_regions.output.fasta,
+  output:
+    fasta="data/{patient_id}/V{v_gene}_unaligned_collapsed.fasta"
+  run:
+    collapse_identical_sequences(input.fasta, output.fasta)
+
 rule protein_and_corrected_dna:
   input:
-    fasta="data/{patient_id}/V{v_gene}_unaligned.fasta",
+    fasta=rules.collapse_identical_sequences.output.fasta
   output:
     aa="data/{patient_id}/V{v_gene}_unaligned_corrected_AA.fasta",
     nuc="data/{patient_id}/V{v_gene}_unaligned_corrected_nuc.fasta"

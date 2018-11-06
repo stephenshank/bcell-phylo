@@ -10,18 +10,6 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 
 
-def get_clones(wildcards, clones):
-    return ["data/out/" + wildcards.patient_id + "/clone_" + clone + "_unaligned.fasta" for clone in clones]
-
-
-def get_rearrangements(wildcards):
-    directory =  "data/out/" + wildcards.patient_id + "/"
-    gene_fn =  directory + wildcards.v_gene + "_unique.txt"
-    rearrangements_prefixes = open(gene_fn).readlines()
-    rearrangement_fns = [directory + prefix.strip() +  "_unaligned_corrected_AA.fasta" for prefix in rearrangements_prefixes]
-    return rearrangement_fns
-
-
 def get_unique_vs(patients, clones):
     vs = []
     for patient_id in patients:
@@ -195,6 +183,34 @@ def separate_into_regions(input, output, v_gene):
               bad_searches.append(sequence.id)
       SeqIO.write(v_sequences, output, 'fasta')
       print('%d searches were bad: %s' % ( len(bad_searches), bad_search_text))
+
+
+def collapse_identical_sequences(input_fasta, output_fasta):
+    records = list(SeqIO.parse(input_fasta, 'fasta'))
+    collapsed_records = []
+    enumerated_records = list(enumerate(records))
+    deleted_records = []
+    for i, record_i in enumerated_records:
+        if not i in deleted_records:
+            for j, record_j in enumerated_records[i+1:]:
+                time_i = int(record_i.name.split('_')[1].split('-')[1])
+                time_j = int(record_j.name.split('_')[1].split('-')[1])
+                if record_i.seq == record_j.seq and time_i == time_j:
+                    id_i = record_i.name.split('_')[0][3:]
+                    id_j = record_j.name.split('_')[0][3:]
+                    size_i = int(record_i.name.split('_')[2].split('-')[1])
+                    size_j = int(record_j.name.split('_')[2].split('-')[1])
+                    new_id = id_i+id_j
+                    new_size = size_i+size_j
+                    header_portion = '_'.join(record_i.name.split('_')[3:])
+                    header_parameters = (new_id, time_i, new_size, header_portion)
+                    new_header = 'seq%s_time-%d_size-%d_%s' % header_parameters 
+                    record_i.name = new_header
+                    deleted_records.append(j)
+            collapsed_records.append(record_i)
+    with open(output_fasta, 'w') as output_file:
+        for record in collapsed_records:
+            output_file.write('>%s\n%s\n' % (record.name, str(record.seq)))
 
 
 def protein_and_corrected_dna(input, output_aa, output_nuc):
