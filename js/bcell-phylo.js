@@ -122,7 +122,7 @@ class BCellPhylo extends Component {
     super(props);
 
     this.column_sizes = [700, 700, 200, 200, 700];
-    this.row_sizes = [20, 20, 700];
+    this.row_sizes = [40, 20, 700];
   }
   componentWillUpdate(nextProps) {
     if (nextProps.json) {
@@ -221,7 +221,8 @@ class BCellPhylo extends Component {
 
       
       const alignment_axis_width = this.column_sizes[4],
-        alignment_axis_height  = this.row_sizes[0];
+        alignment_axis_height  = this.row_sizes[0],
+        bar_axis_height = this.row_sizes[1];
 
       d3.select("#alignmentjs-axis-div")
         .style("width", alignment_axis_width + "px")
@@ -236,6 +237,49 @@ class BCellPhylo extends Component {
       var alignment_axis_scale = d3.scale.linear()
         .domain([1, number_of_sites])
         .range([site_size / 2, alignment_width - site_size / 2]);
+
+      const { CDR3, FR3 } = this.props.json,
+        fr3_start = alignment_axis_scale(FR3[0]-.5),
+        fr3_end = alignment_axis_scale(FR3[1]+.5),
+        fr3_width = fr3_end-fr3_start,
+        fr3_midpoint = (fr3_start+fr3_end)/2;
+      d3.select('#alignmentjs-axis')
+        .append('rect')
+        .attr('x', fr3_start)
+        .attr('y', alignment_axis_height/2)
+        .attr('width', fr3_width)
+        .attr('height',  alignment_axis_height/2)
+        .attr('fill', 'blue')
+        .attr('opacity', .5);
+      d3.select('#alignmentjs-axis')
+        .append('text')
+        .attr('x', fr3_midpoint)
+        .attr('y', alignment_axis_height/4)
+        .attr('alignment-baseline', 'middle')
+        .attr('text-anchor', 'middle')
+        .attr('stroke', 'blue')
+        .text('FR3');
+
+      const cdr3_start = alignment_axis_scale(CDR3[0]-.5),
+        cdr3_end = alignment_axis_scale(CDR3[1]+.5),
+        cdr3_width = cdr3_end-cdr3_start,
+        cdr3_midpoint = (cdr3_start+cdr3_end)/2;
+      d3.select('#alignmentjs-axis')
+        .append('rect')
+        .attr('x', cdr3_start)
+        .attr('y', alignment_axis_height/2)
+        .attr('width', cdr3_width)
+        .attr('height',  alignment_axis_height/2)
+        .attr('fill', 'red')
+        .attr('opacity', .5);
+      d3.select('#alignmentjs-axis')
+        .append('text')
+        .attr('x', cdr3_midpoint)
+        .attr('y', alignment_axis_height/4)
+        .attr('alignment-baseline', 'middle')
+        .attr('text-anchor', 'middle')
+        .attr('stroke', 'red')
+        .text('CDR3');
 
       var alignment_axis_svg = d3.select("#alignmentjs-alignment-axis");
       alignment_axis_svg.html("");
@@ -271,7 +315,7 @@ class BCellPhylo extends Component {
 
       bar_axis_svg.append("g")
         .attr("class", "axis")
-        .attr("transform", `translate(0, ${alignment_axis_height - 1})`)
+        .attr("transform", `translate(0, ${bar_axis_height - 1})`)
         .call(bar_axis);
 
       var bar_svg = d3.select("#alignmentjs-bar");
