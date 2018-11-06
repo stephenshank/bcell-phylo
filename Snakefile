@@ -27,10 +27,11 @@ rule all:
 
 rule unpacked:
   input:
-    "data/bcell-phylo_Ver3.tar.gz"
+    "data/bcell-phylo_Ver4.tar.gz"
   output:
     expand("data/input/{patient_id}_{clone}_clone.json", patient_id=PATIENT_IDS, clone=CLONES),
-    expand("data/input/Germline_nuc_V{gene}.fasta", gene=GENES)
+    "data/input/imgt.dat",
+    "data/input/imgt.fasta"
   shell:
     "tar xvzf {input} -C data/input"
 
@@ -53,6 +54,8 @@ rule unique_vs:
 rule imgt_records:
   input:
     dat="data/input/imgt.dat"
+  output:
+    "data/imgt/V{v_gene}/raw.txt"
   run:
     extract_imgt_records(input.dat, IMGT_IDS)
 

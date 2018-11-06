@@ -231,7 +231,7 @@ class BCellPhylo extends Component {
         number_of_sequences = this.sequence_data.length,
         { site_size } = this.props,
         alignment_width = site_size * number_of_sites,
-        alignment_height = site_size * number_of_sequences;
+        alignment_height = site_size * (number_of_sequences-1);
 
       var alignment_axis_scale = d3.scale.linear()
         .domain([1, number_of_sites])
@@ -291,7 +291,7 @@ class BCellPhylo extends Component {
       const alignment_viewport_height = this.row_sizes[2],
         alignment_viewport_width = this.column_sizes[4],
         full_pixel_width = site_size * number_of_sites,
-        full_pixel_height = site_size * number_of_sequences;
+        full_pixel_height = site_size * (number_of_sequences-1);
       const scroll_broadcaster = new ScrollBroadcaster(
         { width: full_pixel_width, height: full_pixel_height },
         { width: alignment_viewport_width, height: alignment_viewport_height },
