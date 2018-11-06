@@ -469,9 +469,9 @@ class BCellPhylo extends Component {
     if (!this.props.json) {
       return <div />;
     }
-    const container_style = {
+    const main_viz_style = {
       display: "grid",
-      gridTemplateColumns: this.column_sizes.join("px ") + "px",
+      gridTemplateColumns: this.column_sizes.slice(1).join("px ") + "px",
       gridTemplateRows: this.row_sizes.join("px ") + "px"
     },
     legend = [
@@ -504,72 +504,88 @@ class BCellPhylo extends Component {
     this.sequence_data.number_of_sites = this.sequence_data[0].seq.length;
     return (<Row>
       <Col xs={12}>
-        <h4>Patient {this.props.json.patient}, gene {this.props.json.gene}, fragment {this.props.json.fragment}</h4>
-        <div id='main_viz' style={container_style}>
+        <div id='viz' style={{display: "flex"}}>
+          <div id='guide_tree' style={{display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
 
-          <div style={{gridArea: "1 / 1 / 3 / 4"}}>
-            <svg width={1400} height={40}>
-              {legend.map((d,i) => {
-                return (<g key={d.text} transform={`translate(${20+175*i}, 0)`} >
-                  <rect width={20} height={20} fill={d.color} />,
-                  <text x={25} y={15}>{d.text}</text>
-                </g>);
-              }) } 
-            </svg>
-            <svg width={this.props.guide_size} height={this.props.guide_size} id='guide-tree' />
+            <div style={{width: this.column_sizes[0], display: "flex", justifyContent: "center"}}>
+              <h4>Patient {this.props.json.patient}, gene {this.props.json.gene}, fragment {this.props.json.fragment}</h4>
+            </div>
+
+            <div id="alignmentjs-guideTree-div">
+              <svg id="alignmentjs-guideTree" />
+            </div>
+
           </div>
+          <div id='main_viz' style={main_viz_style}>
+            <div style={{gridRow: "1 / 3"}}>
+              <div style={{display: "flex", justifyContent: "center"}}>
+                <svg width={510} height={this.row_sizes[0]+this.row_sizes[1]}>
+                  {legend.map((d,i) => {
+                    const x = 20+175*Math.floor(i/2),
+                      y = i % 2 == 0 ? 0 : 25;
+                    return (<g key={d.text} transform={`translate(${x}, ${y})`} >
+                      <rect width={20} height={20} fill={d.color} />,
+                      <text x={25} y={15}>{d.text}</text>
+                    </g>);
+                  }) } 
+                </svg>
+              </div>
+            </div>
 
-        <div style={{textAlign: "center"}}><p>Family size</p></div>
+            <div />
 
-        <SiteAxis
-          width={this.column_sizes[4]}
-          height={this.row_sizes[0]}
-          sequence_data={this.sequence_data}
-        />
+            <div style={{display: "flex", justifyContent: "center", alignItems: "flex-end"}}>
+              <p>Family size</p>
+            </div>
 
-        <div id="alignmentjs-bar-axis-div">
-          <svg id="alignmentjs-bar-axis" />
-        </div>
+            <SiteAxis
+              width={this.column_sizes[4]}
+              height={this.row_sizes[0]}
+              sequence_data={this.sequence_data}
+            />
 
-        <BaseAlignment
-          width={this.column_sizes[4]}
-          height={this.row_sizes[1]}
-          sequence_data={[this.sequence_data[0]]}
-          disableVerticalScrolling
-          site_color={highlight_roi_color}
-          text_color={highlight_roi_text_color}
-          id='germline'
-        />
+            <div />
 
-        <div id="alignmentjs-guideTree-div">
-          <svg id="alignmentjs-guideTree" />
-        </div>
+            <div id="alignmentjs-bar-axis-div">
+              <svg id="alignmentjs-bar-axis" />
+            </div>
 
-        <div
-          id="alignmentjs-largeTreeAlignment-div"
-          style={{ overflowX: "scroll", overflowY: "scroll" }}
-        >
-          <svg id="alignmentjs-largeTreeAlignment" />
-        </div>
+            <BaseAlignment
+              width={this.column_sizes[4]}
+              height={this.row_sizes[1]}
+              sequence_data={[this.sequence_data[0]]}
+              disableVerticalScrolling
+              site_color={highlight_roi_color}
+              text_color={highlight_roi_text_color}
+              id='germline'
+            />
 
-        <SequenceAxis
-          width={this.column_sizes[2]}
-          height={this.row_sizes[2]}
-          sequence_data={this.sequence_data.slice(1)}
-        />
+            <div
+              id="alignmentjs-largeTreeAlignment-div"
+              style={{ overflowX: "scroll", overflowY: "scroll" }}
+            >
+              <svg id="alignmentjs-largeTreeAlignment" />
+            </div>
 
-        <div id="alignmentjs-bar-div" style={{overflowY: "scroll"}}>
-          <svg id="alignmentjs-bar" />
-        </div>
+            <SequenceAxis
+              width={this.column_sizes[2]}
+              height={this.row_sizes[2]}
+              sequence_data={this.sequence_data.slice(1)}
+            />
 
-        <BaseAlignment
-          width={this.column_sizes[4]}
-          height={this.row_sizes[2]}
-          sequence_data={this.sequence_data.slice(1)}
-          site_color={highlight_roi_color}
-          text_color={highlight_roi_text_color}
-        />
+            <div id="alignmentjs-bar-div" style={{overflowY: "scroll"}}>
+              <svg id="alignmentjs-bar" />
+            </div>
 
+            <BaseAlignment
+              width={this.column_sizes[4]}
+              height={this.row_sizes[2]}
+              sequence_data={this.sequence_data.slice(1)}
+              site_color={highlight_roi_color}
+              text_color={highlight_roi_text_color}
+            />
+
+          </div>
         </div>
       </Col>
     </Row>);
@@ -583,3 +599,4 @@ BCellPhylo.defaultProps = {
 }
 
 module.exports = BCellPhylo;
+
