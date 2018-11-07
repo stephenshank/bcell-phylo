@@ -17,12 +17,8 @@ class App extends Component {
     super(props);
     this.patients = [ "28729", "48689", "67029", "77612", "78202", "93954", "99361", "99682", "GJS" ];
     this.genes = [
-      "1-full", "1-18", "1-2", "1-24", "1-3", "1-46", "1-69", "1-69-2", "1-69D", "1-8", "1-45", "1-58",
-      "2-full", "2-5", "2-70", "2-26",
-      "3-full", "3-11", "3-13", "3-15", "3-20", "3-21", "3-23", "3-30-3", "3-33", "3-43", "3-48", "3-49", "3-53", "3-64", "3-66", "3-7", "3-72", "3-9", "3-43D", "3-73", "3-74",
-      "4-full", "4-30-2", "4-30-4", "4-31", "4-34", "4-38-2", "4-39", "4-4", "4-59", "4-61",
-      "5-full", "5-51", "5-10-1",
-      "6-full", "6-1"
+      "3-11",
+      "3-15"
     ];
     this.state = { 
       patient: null,
@@ -33,12 +29,9 @@ class App extends Component {
     this.setState({json: null}, function() {
       if (fragment == "full") {
         var json_path = `/data/${patient}/V${gene}.json`;
-        console.log('full');
       } else {
         var json_path = `/data/${patient}/V${gene}-${fragment}.json`;
-        console.log('fragment');
       }
-      console.log(json_path);
       d3.json(json_path, (err, json_data) => {
         json_data.patient = patient;
         json_data.gene = gene;
@@ -60,12 +53,7 @@ class App extends Component {
   }
   onSelect(key){
     const fragment_choices = {
-      1: 18,
-      2: 5,
       3: 11,
-      4: '30-2',
-      5: 51,
-      6: 1
     };
     const patient = key.type == 'patient' ? key.value : this.state.patient;
     const gene = key.type == 'gene' ? key.value : this.state.gene;
@@ -95,7 +83,7 @@ class App extends Component {
                 }) }
             </NavDropdown>
             <NavDropdown title='Gene' id='patient'>
-              {[1, 2, 3, 4, 5, 6].map(gene => {
+              {[3].map(gene => {
                 const eventKey = { type: 'gene', value: gene };
                 return (<MenuItem
                   eventKey={eventKey}

@@ -1,3 +1,5 @@
+import os
+import itertools as it
 import re
 import collections
 import json
@@ -8,16 +10,19 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 
 
-def get_clones(wildcards, clones):
-    return ["data/out/" + wildcards.patient_id + "/clone_" + clone + "_unaligned.fasta" for clone in clones]
-
-
-def get_rearrangements(wildcards):
-    directory =  "data/out/" + wildcards.patient_id + "/"
-    gene_fn =  directory + wildcards.v_gene + "_unique.txt"
-    rearrangements_prefixes = open(gene_fn).readlines()
-    rearrangement_fns = [directory + prefix.strip() +  "_unaligned_corrected_AA.fasta" for prefix in rearrangements_prefixes]
-    return rearrangement_fns
+def get_unique_vs(patients, clones):
+    vs = []
+    for patient_id in patients:
+        for clone in clones:
+            json_filename = 'data/input/%s_%s_clone.json' % (patient_id, clone) 
+            with open(json_filename) as json_file:
+                data = json.load(json_file)
+            all_entries = it.chain.from_iterable(data)
+            vs += [re.split(',|\*|\|', entry['tag'])[0] for entry in all_entries]
+    unique_vs = list(set(vs))
+    unique_vs.sort()
+    with open('data/unique_vs.json', 'w') as output_file:
+        json.dump(unique_vs, output_file)
 
 
 def clone_json_to_unaligned_fasta(input, output, clone):
@@ -43,6 +48,125 @@ def clone_json_to_unaligned_fasta(input, output, clone):
         print('%d sequences that would not translate.' % bad_sequences)
 
 
+def extract_imgt_records(path_to_imgt_db, imgt_ids):
+    check_string = "Human immunoglobulin heavy chain variable region V"
+    with open(path_to_imgt_db) as full_file:
+        text = ''
+        for line in full_file:
+            if check_string in line:
+                v_gene = line.split()[7]
+            if line[:2] != '//':
+                text += line
+                if line[:2] == 'ID':
+                    imgt_id = line.split()[1].split(';')[0]
+            else:
+                if imgt_id in imgt_ids:
+                    os.makedirs('data/imgt/%s' % v_gene, exist_ok=True)
+                    filename = 'data/imgt/%s/raw.txt' % v_gene
+                    with open(filename, 'w') as record_file:
+                        record_file.write(text)
+                text = ''
+
+
+def parse_imgt_record(input_record, output_nucleotide_fasta, output_protein_fasta, output_json, v_gene):
+    inside_sequence = False
+    inside_exon = False
+    inside_cdr3 = False
+    inside_fr3 = False
+
+    sequence_string = ''
+    exon_lines = []
+    cdr3_lines = []
+    fr3_lines = []
+    with open(input_record) as raw_file:
+        for line in raw_file:
+            if 'V-EXON' in line:
+                inside_exon = True
+            elif 'L-PART2' in line:
+                inside_exon = False
+            if 'CDR3-IMGT' in line:
+                inside_cdr3 = True
+            elif "3'UTR" in line:
+                inside_cdr3 = False
+            if 'FR3-IMGT' in line:
+                inside_fr3 = True
+            elif '2nd-CYS' in line:
+                inside_fr3 = False
+
+            if inside_sequence:
+                sequence_string += ''.join(line.split()[:-1])
+            if inside_exon:
+                exon_lines.append(line)
+            if inside_cdr3:
+                cdr3_lines.append(line)
+            if inside_fr3:
+                fr3_lines.append(line)
+
+            if line[:2] == 'SQ':
+                inside_sequence = True
+    sequence = Seq(sequence_string)
+
+    exon_start = int(exon_lines[0].split()[2].split('..')[0])
+    exon_start += 1
+    exon_end = int(exon_lines[0].split()[2].split('..')[1])
+    exon_end -= 2
+    exon_codon_start = int(exon_lines[1].split('=')[-1])
+    exon_translation = exon_lines[2].split('"')[-1]
+    exon_translation += exon_lines[3].split()[-1]
+    exon_translation += exon_lines[4].split()[1][:-1]
+    exon_translation = "".join(exon_translation.split())
+    assert str(sequence[exon_start: exon_end].translate()) == exon_translation
+
+    cdr3_nucleotide_start = int(cdr3_lines[0].split()[2].split('..')[0])
+    cdr3_nucleotide_start -= 1
+    cdr3_nucleotide_end = int(cdr3_lines[0].split()[2].split('..')[1])
+    cdr3_nucleotide_end -= 2
+    cdr3_translation = cdr3_lines[1].split('"')[1]
+    cdr3_nucleotides = sequence[cdr3_nucleotide_start: cdr3_nucleotide_end]
+    cdr3_check = str(cdr3_nucleotides.translate())
+    assert cdr3_check == cdr3_translation
+    cdr3_protein_start = int((cdr3_nucleotide_start - exon_start) / 3)
+    cdr3_protein_width = int((cdr3_nucleotide_end - cdr3_nucleotide_start) / 3)
+    cdr3_protein_end = cdr3_protein_start + cdr3_protein_width
+    assert exon_translation[cdr3_protein_start: cdr3_protein_end] == cdr3_translation
+
+    fr3_nucleotide_start = int(fr3_lines[0].split()[2].split('..')[0])
+    fr3_nucleotide_start -= 1
+    fr3_nucleotide_end = int(fr3_lines[0].split()[2].split('..')[1])
+    fr3_translation = fr3_lines[1].split('"')[1]
+    fr3_check = str(sequence[fr3_nucleotide_start: fr3_nucleotide_end].translate())
+    assert fr3_check == fr3_translation
+    fr3_protein_start = int((fr3_nucleotide_start - exon_start) / 3)
+    fr3_protein_width = int((fr3_nucleotide_end - fr3_nucleotide_start) / 3)
+    fr3_protein_end = fr3_protein_start + fr3_protein_width
+    assert exon_translation[fr3_protein_start: fr3_protein_end] == fr3_translation
+
+    record_information = {
+        "exon_start": exon_start,
+        "exon_finish": exon_end,
+        "exon_codon_start": exon_codon_start,
+        "exon_translation": exon_translation,
+        "cdr3_nucleotide_start": cdr3_nucleotide_start,
+        "cdr3_nucleotide_end": cdr3_nucleotide_end,
+        "cdr3_protein_start": cdr3_protein_start,
+        "cdr3_protein_end": cdr3_protein_end,
+        "cdr3_translation": cdr3_translation,
+        "fr3_nucleotide_start": fr3_nucleotide_start,
+        "fr3_nucleotide_end": fr3_nucleotide_end,
+        "fr3_protein_start": fr3_protein_start,
+        "fr3_protein_end": fr3_protein_end,
+        "fr3_translation": fr3_translation
+    }
+
+    header = "Germline_V%s" % v_gene
+    with open(output_nucleotide_fasta, 'w') as nucleotide_fasta_file:
+        nucleotide_fasta_file.write('>%s\n%s\n' % (header, sequence))
+    with open(output_protein_fasta, 'w') as protein_fasta_file:
+        protein_fasta_file.write('>%s\n%s\n' % (header, exon_translation))
+    with open(output_json, 'w') as json_file:
+        json.dump(record_information, json_file, indent=4)
+
+
 def separate_into_regions(input, output, v_gene):
     v_gene_regex = re.compile('._V(' + v_gene + ').')
     bad_searches = []
@@ -59,6 +183,34 @@ def separate_into_regions(input, output, v_gene):
               bad_searches.append(sequence.id)
       SeqIO.write(v_sequences, output, 'fasta')
       print('%d searches were bad: %s' % ( len(bad_searches), bad_search_text))
+
+
+def collapse_identical_sequences(input_fasta, output_fasta):
+    records = list(SeqIO.parse(input_fasta, 'fasta'))
+    collapsed_records = []
+    enumerated_records = list(enumerate(records))
+    deleted_records = []
+    for i, record_i in enumerated_records:
+        if not i in deleted_records:
+            for j, record_j in enumerated_records[i+1:]:
+                time_i = int(record_i.name.split('_')[1].split('-')[1])
+                time_j = int(record_j.name.split('_')[1].split('-')[1])
+                if record_i.seq == record_j.seq and time_i == time_j:
+                    id_i = record_i.name.split('_')[0][3:]
+                    id_j = record_j.name.split('_')[0][3:]
+                    size_i = int(record_i.name.split('_')[2].split('-')[1])
+                    size_j = int(record_j.name.split('_')[2].split('-')[1])
+                    new_id = id_i+id_j
+                    new_size = size_i+size_j
+                    header_portion = '_'.join(record_i.name.split('_')[3:])
+                    header_parameters = (new_id, time_i, new_size, header_portion)
+                    new_header = 'seq%s_time-%d_size-%d_%s' % header_parameters 
+                    record_i.name = new_header
+                    deleted_records.append(j)
+            collapsed_records.append(record_i)
+    with open(output_fasta, 'w') as output_file:
+        for record in collapsed_records:
+            output_file.write('>%s\n%s\n' % (record.name, str(record.seq)))
 
 
 def protein_and_corrected_dna(input, output_aa, output_nuc):
@@ -133,71 +285,37 @@ def gap_trimmer(input, output):
         for line in lines:
             file.write("{}{}\n{}\n".format( '>', line[0], line[1]))
 
-def window_gap_trimmer(input_profile, output_fasta, output_json, wildcards):
-    profile = list(SeqIO.parse(input_profile, 'fasta'))
-    id_codon = [str(i.id) for i in profile]
-    seq_codon = [list(str(i.seq)) for i in profile]
 
-    CDR3_dict = {'V1':(557,564), 'V1-2':(557,564), 'V1-3':(451,458), 'V1-8':(489,496), 'V1-18':(476,483), 'V1-24':(498,505), 'V1-38-4':(679,686), 'V1-45':(432,439), 'V1-46':(583,590), 'V1-58':(581,588), 'V1-68':(6744,6751), 'V1-69':(664,671), 'V1-69-2':(681,688), 'V1-69D':(682,689), 'V2':(505,514), 'V2-5':(505,514), 'V2-10':(502,511), 'V2-26':(455,464), 'V2-70':(435,444), 'V3':(632,639), 'V3-7':(632,639), 'V3-9':(568,577), 'V3-11':(490,497), 'V3-13':(447,454), 'V3-15':(456,463), 'V3-16':(476,483), 'V3-19':(584,591), 'V3-20':(458,465), 'V3-21':(11917,11924), 'V3-22':(539,546), 'V3-23':(458,465), 'V3-25':(524,531), 'V3-29':(11917,11924), 'V3-30':(2228,2235), 'V3-30-3':(2134,2141), 'V3-32':(23127,23136), 'V3-33':(11917,11924), 'V3-35':(586,593), 'V3-38':(451,460), 'V3-43':(504,617), 'V3-43D':(699,708), 'V3-47':(286,291), 'V3-48':(622,629), 'V3-49':(678,685), 'V3-52':(655,662), 'V3-53':(481,488), 'V3-54':(585,592), 'V3-62':(6744,6751), 'V3-63':(458,467), 'V3-64':(529,536), 'V3-66':(445,452), 'V3-69':(454,461), 'V3-71':(6744,6751), 'V3-72':(541,548), 'V3-73':(978,985), 'V3-74':(471,478), 'V4':(580,587), 'V4-4':(580,587), 'V4-28':(578,585), 'V4-30-2':(292,299), 'V4-30-4':(421,438), 'V4-31':(318,325), 'V4-34':(11917,11924), 'V4-38-2':(289,294), 'V4-39':(11917,11924), 'V4-55':(658,665), 'V4-59':(2332,2339), 'V4-61':(581,588), 'V5':(301,306), 'V5-10-1':(301,306), 'V5-51':(596,603), 'V6':(777,784), 'V6-1':(777,784)}
-    FR3_dict = {'V1':(443,556),'V1-2':(443,556), 'V1-3':(337,450), 'V1-8':(375,488), 'V1-18':(362,475), 'V1-24':(384,497), 'V1-38-4':(565,678), 'V1-45':(318,431), 'V1-46':(469,582), 'V1-58':(467,580), 'V1-68':(6630,6743), 'V1-69':(550,663), 'V1-69-2':(567,680), 'V1-69D':(568,681), 'V2':(391,504), 'V2-5':(391,504), 'V2-10':(388,501), 'V2-26':(341,454), 'V2-70':(321,434), 'V3':(518,631), 'V3-7':(518,631), 'V3-9':(454,567), 'V3-11':(376,489), 'V3-13':(333,446), 'V3-15':(342,455), 'V3-16':(362,475), 'V3-19':(470,583), 'V3-20':(344,457), 'V3-21':(11803,11916), 'V3-22':(425,538), 'V3-23':(344,457), 'V3-25':(410,523), 'V3-29':(11803,11916), 'V3-30':(2114,2227), 'V3-30-3':(2142,2255), 'V3-32':(23013,23126), 'V3-33':(11803,11916), 'V3-35':(472,585), 'V3-38':(337,450), 'V3-43':(618,627), 'V3-43D':(585,698), 'V3-47':(172,285), 'V3-48':(508,621), 'V3-49':(564,677), 'V3-52':(541,654), 'V3-53':(367,480), 'V3-54':(471,584), 'V3-62':(6630,6743), 'V3-63':(344,457), 'V3-64':(415,528), 'V3-66':(331,444), 'V3-69':(340,453), 'V3-71':(6630,6743), 'V3-72':(427,540), 'V3-73':(864,977), 'V3-74':(357,470), 'V4':(466,579), 'V4-4':(466,579), 'V4-28':(464,577), 'V4-30-2':(178,291), 'V4-30-4':(317,430), 'V4-31':(204,317), 'V4-34':(11803,11916), 'V4-38-2':(175,288), 'V4-39':(11803,11916), 'V4-55':(544,657), 'V4-59':(2218,2331), 'V4-61':(467,580), 'V5':(187,300), 'V5-10-1':(187,300), 'V5-51':(482,595),'V6':(663,776), 'V6-1':(777,784)}
-    
-    profiled_seq = None
+def indicial_mapper(input_fasta, input_json, output_json, v_gene):
+    profile = list(SeqIO.parse(input_fasta, 'fasta'))
+    germline = None
     for seq_record in profile:
           if 'Germline' in seq_record.description:
-              profiled_seq = seq_record
+              germline = seq_record
 
-    profiled_np = np.array(list(str(profiled_seq.seq)), dtype='<U1')
-    is_gap = profiled_np == '-'
+    germline_np = np.array(list(str(germline.seq)), dtype='<U1')
+    is_gap = germline_np == '-'
     profile_indices = np.arange(len(is_gap))
     index_map = profile_indices[~is_gap]
 
-    example = np.array(seq_codon, dtype='<U1')
-    nongap_counts = np.sum(example != '-', axis=0)
-    window = np.stack([nongap_counts[:-2], nongap_counts[1:-1], nongap_counts[2:]])
-    payload = np.min(window, axis=0)
-    start = np.argmax(payload >= 2)
-    stop = len(payload) - np.argmax(payload[:-1] >= 2)
-    reduced = example[:, start:stop+1]
+    with open(input_json) as v_gene_json_file:
+        imgt_vgene_data = json.load(v_gene_json_file)
 
+    CDR3_profile_coords = (
+        int(index_map[imgt_vgene_data['cdr3_protein_start']])+1,
+        int(index_map[imgt_vgene_data['cdr3_protein_end']-1])+1
+    )
 
-
-    CDR3_coords = CDR3_dict[str('V'+wildcards.v_gene)]
-    CDR3_profile_coords = (int(index_map[CDR3_coords[0]]- start -1), int(index_map[CDR3_coords[1]]-start-1))
-
-    FR3_coords = FR3_dict['V'+str(wildcards.v_gene)]
-    FR3_profile_coords = (int(index_map[FR3_coords[0]]-start-1), int(index_map[FR3_coords[1]]-start-1))
-
-    j = [''.join(row) for row in list(reduced)]
-    V = str('V'+wildcards.v_gene)
+    FR3_profile_coords = (
+        int(index_map[imgt_vgene_data['fr3_protein_start']])+1,
+        int(index_map[imgt_vgene_data['fr3_protein_end']-1])+1
+    )
 
     output_dict = {
-        'V': V,
         'CDR3': CDR3_profile_coords,
         'FR3': FR3_profile_coords
     }
 
-    with open(output_json, 'w') as file:
-        json.dump(output_dict, file)
-
-    lines = zip(id_codon,j)
-    with open(output_fasta, 'w' ) as file:
-      for line in lines:
-             file.write("{}{}\n{}\n".format( '>', line[0], line[1]))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    with open(output_json, 'w') as output_json_file:
+        json.dump(output_dict, output_json_file)
 
