@@ -121,7 +121,7 @@ class BCellPhylo extends Component {
   constructor(props) {
     super(props);
 
-    this.column_sizes = [700, 700, 200, 200, 700];
+    this.column_sizes = [700, 700, 200, 700, 200];
     this.row_sizes = [40, 20, 700];
   }
   componentWillUpdate(nextProps) {
@@ -220,7 +220,7 @@ class BCellPhylo extends Component {
       this.guide_tree(this.parsed).layout();
 
       
-      const alignment_axis_width = this.column_sizes[4],
+      const alignment_axis_width = this.column_sizes[3],
         alignment_axis_height  = this.row_sizes[0],
         bar_axis_height = this.row_sizes[1];
 
@@ -257,7 +257,7 @@ class BCellPhylo extends Component {
         .attr('y', alignment_axis_height/4)
         .attr('alignment-baseline', 'middle')
         .attr('text-anchor', 'middle')
-        .attr('stroke', 'blue')
+        .attr('fill', 'blue')
         .text('FR3');
 
       const cdr3_start = alignment_axis_scale(CDR3[0]-.5),
@@ -278,7 +278,7 @@ class BCellPhylo extends Component {
         .attr('y', alignment_axis_height/4)
         .attr('alignment-baseline', 'middle')
         .attr('text-anchor', 'middle')
-        .attr('stroke', 'red')
+        .attr('fill', 'red')
         .text('CDR3');
 
       var alignment_axis_svg = d3.select("#alignmentjs-alignment-axis");
@@ -297,7 +297,7 @@ class BCellPhylo extends Component {
         .attr("transform", `translate(0, ${alignment_axis_height - 1})`)
         .call(alignment_axis);
 
-      const bar_width = this.column_sizes[3],
+      const bar_width = this.column_sizes[4],
         bar_height = this.row_sizes[1];
 
       var bar_axis_svg = d3.select("#alignmentjs-bar-axis");
@@ -306,7 +306,7 @@ class BCellPhylo extends Component {
 
       var bar_scale = d3.scale.linear()
         .domain([0, max_size])
-        .range([10, bar_width-10]);
+        .range([0, bar_width-10]);
 
       var bar_axis = d3.svg.axis()
         .orient("top")
@@ -317,23 +317,24 @@ class BCellPhylo extends Component {
         .attr("class", "axis")
         .attr("transform", `translate(0, ${bar_axis_height - 1})`)
         .call(bar_axis);
+      d3.select('.axis .tick:first-child').remove()
 
       var bar_svg = d3.select("#alignmentjs-bar");
-      bar_svg.attr("width", this.column_sizes[3])
+      bar_svg.attr("width", this.column_sizes[4])
         .attr("height", alignment_height);
 
       bar_svg.selectAll('rect')
         .data(sequence_data.slice(1))
         .enter()
           .append('rect')
-          .attr('x', 10)
+          .attr('x', 0)
           .attr('y', function(d,i) { return i*site_size; })
           .attr('width', function(d) { return bar_scale(d.size); })
           .attr('height', site_size)
           .attr('fill', function(d) { return colors[d.time]; });
         
       const alignment_viewport_height = this.row_sizes[2],
-        alignment_viewport_width = this.column_sizes[4],
+        alignment_viewport_width = this.column_sizes[3],
         full_pixel_width = site_size * number_of_sites,
         full_pixel_height = site_size * (number_of_sequences-1);
       const scroll_broadcaster = new ScrollBroadcaster(
@@ -534,24 +535,25 @@ class BCellPhylo extends Component {
 
             <div />
 
-            <div style={{display: "flex", justifyContent: "center", alignItems: "flex-end"}}>
-              <p>Family size</p>
-            </div>
-
             <SiteAxis
-              width={this.column_sizes[4]}
+              width={this.column_sizes[3]}
               height={this.row_sizes[0]}
               sequence_data={this.sequence_data}
             />
 
-            <div />
-
-            <div id="alignmentjs-bar-axis-div">
-              <svg id="alignmentjs-bar-axis" />
+            <div style={{display: "flex", justifyContent: "center", alignItems: "flex-end"}}>
+              <p>Family size</p>
             </div>
 
+            <SequenceAxis
+              width={this.column_sizes[2]}
+              height={this.row_sizes[2]}
+              sequence_data={[this.sequence_data[0]]}
+              id="dontScrollMe"
+            />
+
             <BaseAlignment
-              width={this.column_sizes[4]}
+              width={this.column_sizes[3]}
               height={this.row_sizes[1]}
               sequence_data={[this.sequence_data[0]]}
               disableVerticalScrolling
@@ -559,6 +561,10 @@ class BCellPhylo extends Component {
               text_color={highlight_roi_text_color}
               id='germline'
             />
+
+            <div id="alignmentjs-bar-axis-div">
+              <svg id="alignmentjs-bar-axis" />
+            </div>
 
             <div
               id="alignmentjs-largeTreeAlignment-div"
@@ -573,17 +579,17 @@ class BCellPhylo extends Component {
               sequence_data={this.sequence_data.slice(1)}
             />
 
-            <div id="alignmentjs-bar-div" style={{overflowY: "scroll"}}>
-              <svg id="alignmentjs-bar" />
-            </div>
-
             <BaseAlignment
-              width={this.column_sizes[4]}
+              width={this.column_sizes[3]}
               height={this.row_sizes[2]}
               sequence_data={this.sequence_data.slice(1)}
               site_color={highlight_roi_color}
               text_color={highlight_roi_text_color}
             />
+
+            <div id="alignmentjs-bar-div" style={{overflowY: "scroll"}}>
+              <svg id="alignmentjs-bar" />
+            </div>
 
           </div>
         </div>
