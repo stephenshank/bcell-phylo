@@ -42,10 +42,26 @@ snakemake $TARGET --cluster "qsub -V" -j $NUMBER_OF_CONCURRENT_JOBS
 
 Make sure that the `python` executable for the `conda` environment is on your `$PATH`.
 
-## Visualization
+## Visualization (development)
 
 After running the pipeline:
 
 ```
 yarn start
+```
+
+## Deployment
+
+### Sync JSON files for viewing on dashboard
+From location where pipeline has been run (usually head node of a cluster):
+
+```
+rsync -arvm --include "*/V*.json" --include="*/" --exclude="*" data/ $USER@$HOST:$BCELLPHYLO/dist/data
+```
+
+### Webserver
+
+```
+webpack
+npx http-server -p $PORT dist
 ```
