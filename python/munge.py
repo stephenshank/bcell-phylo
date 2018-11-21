@@ -12,17 +12,24 @@ from Bio.Seq import Seq
 
 def get_unique_vs(patients, clones):
     vs = []
+    patient_v_pairs = []
     for patient_id in patients:
         for clone in clones:
             json_filename = 'data/input/%s_%s_clone.json' % (patient_id, clone) 
             with open(json_filename) as json_file:
                 data = json.load(json_file)
             all_entries = it.chain.from_iterable(data)
-            vs += [re.split(',|\*|\|', entry['tag'])[0] for entry in all_entries]
+            current_vs = [re.split(',|\*|\|', entry['tag'])[0] for entry in all_entries]
+            current_vs.sort()
+            vs += current_vs
+            current_vs = sorted(list(set(current_vs)))
+            patient_v_pairs += [{'patient_id': patient_id, 'v_gene': v} for v in current_vs]
     unique_vs = list(set(vs))
     unique_vs.sort()
     with open('data/unique_vs.json', 'w') as output_file:
-        json.dump(unique_vs, output_file)
+        json.dump(unique_vs, output_file, indent=2)
+    with open('data/patient_v_pairs.json', 'w') as output_file:
+        json.dump(patient_v_pairs, output_file, indent=2)
 
 
 def clone_json_to_unaligned_fasta(input, output, clone):
