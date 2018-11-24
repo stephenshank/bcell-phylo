@@ -1,4 +1,5 @@
 imgt
+blast
 *.tar.gz
 *.fasta
 *.json

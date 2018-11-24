@@ -29,6 +29,14 @@ rule unpacked:
   shell:
     "tar xvzf {input} -C data/input"
 
+rule blast_database:
+  input:
+    "data/input/imgt.fasta"
+  output:
+    "data/blast"
+  shell:
+    "makeblastdb -in {input} -dbtype nucl -parse_seqids -out data/blast/db"
+
 rule clone_json_to_unaligned_fasta:
   input:
     json="data/input/{patient_id}_{clone}_clone.json"
@@ -68,9 +76,17 @@ rule separate_into_regions:
   input:
     fasta=expand("data/{{patient_id}}/clone_{clone}_unaligned.fasta", clone=CLONES)
   output:
-    fasta="data/{patient_id}/V{v_gene}_unaligned.fasta"
+    fasta="data/{patient_id}/V{v_gene}/unaligned.fasta"
   run:
     separate_into_regions(input.fasta, output.fasta, wildcards.v_gene)
+
+rule blast_results:
+  input:
+    rules.separate_into_regions.output.fasta
+  output:
+    "data/{patient_id}/V{v_gene}/blast/result.json"
+  shell:
+    "blastn -db data/blast/db -query {input} -out {output}"
 
 rule collapse_identical_sequences:
   input:
@@ -146,7 +162,7 @@ rule v_gene_json:
     json=rules.indicial_mapper.output.json,
     tree=rules.trees.output.tree,
   output:
-    json="data/{patient_id}/V{v_gene}.json"
+    json="data/{patient_id}/V{v_gene}/dashboard.json"
   run:
     json_for_dashboard(input.fasta, input.json, input.tree, output.json, wildcards)
 
