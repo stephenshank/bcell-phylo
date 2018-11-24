@@ -41,7 +41,8 @@ rule unique_vs:
   input:
     expand("data/input/{patient_id}_{clone}_clone.json", patient_id=PATIENT_IDS, clone=CLONES),
   output:
-    "data/unique_vs.json"
+    "data/unique_vs.json",
+    "data/patient_v_pairs.json"
   run:
     get_unique_vs(PATIENT_IDS, CLONES)
 
