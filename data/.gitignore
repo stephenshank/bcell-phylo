@@ -4,3 +4,4 @@ blast
 *.fasta
 *.json
 *.new
+joblib

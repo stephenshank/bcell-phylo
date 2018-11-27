@@ -8,9 +8,17 @@ import itertools as it
 import numpy as np
 from Bio import SeqIO
 from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from Bio import AlignIO
+from Bio.Align import AlignInfo
+from joblib import Memory
 
 
-def get_unique_vs(patients, clones):
+JOBLIB_CACHE = os.path.join('data', 'joblib')
+MEMORY = Memory(JOBLIB_CACHE, verbose=0)
+
+@MEMORY.cache
+def get_unique_vs(patients, clones, write=False):
     vs = []
     patient_v_pairs = []
     for patient_id in patients:
@@ -26,10 +34,12 @@ def get_unique_vs(patients, clones):
             patient_v_pairs += [{'patient_id': patient_id, 'v_gene': v} for v in current_vs]
     unique_vs = list(set(vs))
     unique_vs.sort()
-    with open('data/unique_vs.json', 'w') as output_file:
-        json.dump(unique_vs, output_file, indent=2)
-    with open('data/patient_v_pairs.json', 'w') as output_file:
-        json.dump(patient_v_pairs, output_file, indent=2)
+    if write:
+        with open('data/unique_vs.json', 'w') as output_file:
+            json.dump(unique_vs, output_file, indent=2)
+        with open('data/patient_v_pairs.json', 'w') as output_file:
+            json.dump(patient_v_pairs, output_file, indent=2)
+    return (unique_vs, patient_v_pairs)
 
 
 def clone_json_to_unaligned_fasta(input, output, clone):
@@ -53,26 +63,6 @@ def clone_json_to_unaligned_fasta(input, output, clone):
         print('No bad sequencees.')
     else:
         print('%d sequences that would not translate.' % bad_sequences)
-
-
-def extract_imgt_records(path_to_imgt_db, imgt_ids):
-    check_string = "Human immunoglobulin heavy chain variable region V"
-    with open(path_to_imgt_db) as full_file:
-        text = ''
-        for line in full_file:
-            if check_string in line:
-                v_gene = line.split()[7]
-            if line[:2] != '//':
-                text += line
-                if line[:2] == 'ID':
-                    imgt_id = line.split()[1].split(';')[0]
-            else:
-                if imgt_id in imgt_ids:
-                    os.makedirs('data/imgt/%s' % v_gene, exist_ok=True)
-                    filename = 'data/imgt/%s/raw.txt' % v_gene
-                    with open(filename, 'w') as record_file:
-                        record_file.write(text)
-                text = ''
 
 
 def parse_imgt_record(input_record, output_nucleotide_fasta, output_protein_fasta, output_json, v_gene):
@@ -272,6 +262,18 @@ def protein_alignment_to_codon_alignment(protein_alignment, nucleotide_fasta, ou
           out.write('>' + str(line[0].description) +'\n')
           out.write(''.join(u))
           out.write('\n')
+
+
+def get_consensus_sequence(input_fasta, output_fasta):
+    alignment = AlignIO.read(input_fasta, 'fasta')
+    information = AlignInfo.SummaryInfo(alignment)
+    consensus_sequence = information.dumb_consensus()
+    consensus_record = SeqRecord(
+        consensus_sequence,
+        id='consensus',
+        description=''
+    )
+    SeqIO.write(consensus_record, output_fasta, 'fasta')
 
 
 def gap_trimmer(input, output):

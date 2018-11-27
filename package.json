@@ -40,6 +40,7 @@
   },
   "scripts": {
     "start": "./node_modules/.bin/webpack-dev-server --open --host 0.0.0.0",
-    "dag": "snakemake --dag data/77612/V3-11.json | dot -Tsvg > bcell-pipeline.svg && open bcell-pipeline.svg && rm bcell-pipeline.svg"
+    "dag": "snakemake --dag data/77612/V3-11.json | dot -Tsvg > bcell-pipeline.svg && open bcell-pipeline.svg && rm bcell-pipeline.svg",
+    "unpack": "tar xvzf data/bcell-phylo_Ver4.tar.gz -C data/input"
   }
 }
