@@ -31,6 +31,7 @@ def extract_imgt_records(full_imgt_data):
                     imgt_id = line.split()[1].split(';')[0]
             else:
                 filename = 'data/imgt/%s.txt' % imgt_id
+                text += '//\n'
                 with open(filename, 'w') as record_file:
                     record_file.write(text)
                 text = ''
@@ -86,39 +87,43 @@ def get_imgt_information(full_imgt_data, human_imgt_fasta):
 def process_blast_result(blast_result, nuc_fasta, aa_fasta, json_information):
     with open(blast_result) as json_file:
         result = json.load(json_file)
-    top_id = result["BlastOutput2"]["report"]["results"]["search"]["hits"][0]["description"][0]["id"]
-
-    imgt_json_path = 'data/imgt/%s.json' % top_id
-    with open(imgt_json_path) as imgt_json_file:
-        imgt_json = json.load(imgt_json_file)
-        with open(json_information, 'w') as imgt_information_file:
-            json.dump(imgt_json, imgt_information_file, indent=4)
-
-    record = SeqIO.to_dict(SeqIO.parse('data/imgt/sequences.fasta', 'fasta'))[top_id]
-    SeqIO.write(record, nuc_fasta, 'fasta')
-
-    top_id = top_id.split('.')[0]
-    imgt_path = 'data/imgt/%s.txt' % top_id
-    with open(imgt_path) as imgt_file:
-        record = next(SeqIO.InsdcIO.ImgtIterator(imgt_file))
-    types = [feature.type for feature in record.features]
+    hits = result["BlastOutput2"]["report"]["results"]["search"]["hits"]
     write_empty_file = False
-    if 'V-EXON' in types:
-        index = types.index('V-EXON')
-        feature = record.features[index]
-        if 'translation' in feature.qualifiers:
-            exon = Seq(feature.qualifiers['translation'][0])
-            record = SeqRecord(
-                seq=exon,
-                id='Germline_' + top_id,
-                description=''
-            )
-            SeqIO.write(record, aa_fasta, 'fasta')
+    if len(hits) > 0:
+        top_id = hits[0]["description"][0]["id"]
+        imgt_json_path = 'data/imgt/%s.json' % top_id
+        with open(imgt_json_path) as imgt_json_file:
+            imgt_json = json.load(imgt_json_file)
+            with open(json_information, 'w') as imgt_information_file:
+                json.dump(imgt_json, imgt_information_file, indent=4)
+
+        record = SeqIO.to_dict(SeqIO.parse('data/imgt/sequences.fasta', 'fasta'))[top_id]
+        SeqIO.write(record, nuc_fasta, 'fasta')
+
+        top_id = top_id.split('.')[0]
+        imgt_path = 'data/imgt/%s.txt' % top_id
+        with open(imgt_path) as imgt_file:
+            record = next(SeqIO.InsdcIO.ImgtIterator(imgt_file))
+        types = [feature.type for feature in record.features]
+        if 'V-EXON' in types:
+            index = types.index('V-EXON')
+            feature = record.features[index]
+            if 'translation' in feature.qualifiers:
+                exon = Seq(feature.qualifiers['translation'][0])
+                record = SeqRecord(
+                    seq=exon,
+                    id='Germline_' + top_id,
+                    description=''
+                )
+                SeqIO.write(record, aa_fasta, 'fasta')
+            else:
+                write_empty_file = True
         else:
             write_empty_file = True
     else:
         write_empty_file = True
     if write_empty_file:
-        with open(aa_fasta, 'w') as aa_file:
-            pass
+        for empty_file_path in [nuc_fasta, aa_fasta, json_information]:
+            with open(empty_file_path, 'w') as empty_file:
+                pass
 

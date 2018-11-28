@@ -9,6 +9,7 @@ import BCellPhylo from './bcell-phylo.js';
 import JSONs from './jsons.js';
 
 require('./main.css');
+const patient_v_pairs = require('../data/patient_v_pairs.json'); 
 
 
 
@@ -16,12 +17,9 @@ class App extends Component {
   constructor(props){
     super(props);
     this.patients = [ "28729", "48689", "67029", "77612", "78202", "93954", "99361", "99682", "GJS" ];
-    this.genes = [
-      "3-11",
-      "3-15"
-    ];
     this.state = { 
       patient: null,
+      genes: [],
       gene: null
     };
   }
@@ -39,6 +37,7 @@ class App extends Component {
         this.setState({
           patient: patient,
           gene: gene,
+          genes: patient_v_pairs[patient],
           fragment: fragment,
           json: json_data
         });
@@ -83,7 +82,7 @@ class App extends Component {
                 }) }
             </NavDropdown>
             <NavDropdown title='Gene' id='patient'>
-              {[3].map(gene => {
+              {[1, 2, 3, 4, 5, 6].map(gene => {
                 const eventKey = { type: 'gene', value: gene };
                 return (<MenuItem
                   eventKey={eventKey}
@@ -95,9 +94,9 @@ class App extends Component {
               }) }
             </NavDropdown>
             <NavDropdown title='Fragment' id='fragment'>
-              {this.genes.filter(g=>g[0]==this.state.gene)
+              {this.state.genes.filter(g=>g[1]==this.state.gene)
                 .map(fragment => {
-                  fragment = fragment.split('-').slice(1).join('-');
+                  fragment = fragment.split(/-|\//).slice(1).join('-');
                   const eventKey = { type: 'fragment', value: fragment };
                   return (<MenuItem
                     eventKey={eventKey}

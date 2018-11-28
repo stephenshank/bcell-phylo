@@ -18,28 +18,26 @@ JOBLIB_CACHE = os.path.join('data', 'joblib')
 MEMORY = Memory(JOBLIB_CACHE, verbose=0)
 
 @MEMORY.cache
-def get_unique_vs(patients, clones, write=False):
+def get_patient_vgene_pairs(patients, clones, write=False):
     vs = []
     patient_v_pairs = []
     for patient_id in patients:
+        current_patient_vs = []
         for clone in clones:
             json_filename = 'data/input/%s_%s_clone.json' % (patient_id, clone) 
             with open(json_filename) as json_file:
                 data = json.load(json_file)
             all_entries = it.chain.from_iterable(data)
             current_vs = [re.split(',|\*|\|', entry['tag'])[0] for entry in all_entries]
-            current_vs.sort()
-            vs += current_vs
-            current_vs = sorted(list(set(current_vs)))
-            patient_v_pairs += [{'patient_id': patient_id, 'v_gene': v} for v in current_vs]
-    unique_vs = list(set(vs))
-    unique_vs.sort()
-    if write:
-        with open('data/unique_vs.json', 'w') as output_file:
-            json.dump(unique_vs, output_file, indent=2)
-        with open('data/patient_v_pairs.json', 'w') as output_file:
-            json.dump(patient_v_pairs, output_file, indent=2)
-    return (unique_vs, patient_v_pairs)
+            current_patient_vs += current_vs
+        unique_patient_vs = sorted(list(set(current_patient_vs)))
+        patient_v_pairs += [{'patient_id': patient_id, 'v_gene': v} for v in unique_patient_vs]
+    key = lambda entry: entry['patient_id']
+    val = lambda v: [entry['v_gene'] for entry in v]
+    nested_pvps = {k: val(v) for k,v in it.groupby(patient_v_pairs, key)}
+    with open('data/patient_v_pairs.json', 'w') as output_file:
+        json.dump(nested_pvps, output_file, indent=2)
+    return patient_v_pairs
 
 
 def clone_json_to_unaligned_fasta(input, output, clone):
@@ -98,7 +96,7 @@ def collapse_identical_sequences(input_fasta, output_fasta):
                     id_j = record_j.name.split('_')[0][3:]
                     size_i = int(record_i.name.split('_')[2].split('-')[1])
                     size_j = int(record_j.name.split('_')[2].split('-')[1])
-                    new_id = id_i+id_j
+                    new_id = id_j + 'COLLAPSED'
                     new_size = size_i+size_j
                     header_portion = '_'.join(record_i.name.split('_')[3:])
                     header_parameters = (new_id, time_i, new_size, header_portion)
@@ -213,42 +211,48 @@ def indicial_mapper(input_fasta, input_json, output_json, v_gene):
           if 'Germline' in seq_record.description:
               germline = seq_record
 
-    germline_np = np.array(list(str(germline.seq)), dtype='<U1')
-    is_gap = germline_np == '-'
-    profile_indices = np.arange(len(is_gap))
-    index_map = profile_indices[~is_gap]
+    if germline:
+        germline_np = np.array(list(str(germline.seq)), dtype='<U1')
+        is_gap = germline_np == '-'
+        profile_indices = np.arange(len(is_gap))
+        index_map = profile_indices[~is_gap]
 
-    with open(input_json) as v_gene_json_file:
-        imgt_vgene_data = json.load(v_gene_json_file)
+        with open(input_json) as v_gene_json_file:
+            imgt_vgene_data = json.load(v_gene_json_file)
 
-    has_cdr3 = bool(imgt_vgene_data['CDR3-IMGT-START'])
-    has_fr3 = bool(imgt_vgene_data['FR3-IMGT-START'])
-    has_exon = bool(imgt_vgene_data['V-EXON-START'])
-    if has_cdr3 and has_exon:
-        CDR3_profile_coords = get_protein_indices(
-            imgt_vgene_data['V-EXON-START'],
-            imgt_vgene_data['CDR3-IMGT-START'],
-            imgt_vgene_data['CDR3-IMGT-END'],
-            index_map
-        )
+        has_cdr3 = bool(imgt_vgene_data['CDR3-IMGT-START'])
+        has_fr3 = bool(imgt_vgene_data['FR3-IMGT-START'])
+        has_exon = bool(imgt_vgene_data['V-EXON-START'])
+        if has_cdr3 and has_exon:
+            CDR3_profile_coords = get_protein_indices(
+                imgt_vgene_data['V-EXON-START'],
+                imgt_vgene_data['CDR3-IMGT-START'],
+                imgt_vgene_data['CDR3-IMGT-END'],
+                index_map
+            )
+        else:
+            CDR3_profile_coords = None
+
+        if has_fr3 and has_exon:
+            FR3_profile_coords = get_protein_indices(
+                imgt_vgene_data['V-EXON-START'],
+                imgt_vgene_data['FR3-IMGT-START'],
+                imgt_vgene_data['FR3-IMGT-END'],
+                index_map
+            )
+        else:
+            FR3_profile_coords = None
+
+        output_dict = {
+            'CDR3': CDR3_profile_coords,
+            'FR3': FR3_profile_coords
+        }
+
+        with open(output_json, 'w') as output_json_file:
+            json.dump(output_dict, output_json_file)
     else:
-        CDR3_profile_coords = None
+        with open(output_json, 'w') as output_json_file:
+            empty_json = { 'CDR3': None, 'FR3': None }
+            json.dump(empty_json, output_json_file)
 
-    if has_fr3 and has_exon:
-        FR3_profile_coords = get_protein_indices(
-            imgt_vgene_data['V-EXON-START'],
-            imgt_vgene_data['FR3-IMGT-START'],
-            imgt_vgene_data['FR3-IMGT-END'],
-            index_map
-        )
-    else:
-        FR3_profile_coords = None
-
-    output_dict = {
-        'CDR3': CDR3_profile_coords,
-        'FR3': FR3_profile_coords
-    }
-
-    with open(output_json, 'w') as output_json_file:
-        json.dump(output_dict, output_json_file)
 

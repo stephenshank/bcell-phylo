@@ -3,7 +3,7 @@ from python import *
 
 PATIENT_IDS = ["28729", "48689", "67029", "77612", "78202", "93954", "99361", "99682", "GJS"]
 CLONES = ["1", "2", "3", "4", "5", "6"]
-UNIQUE_VS, PATIENT_V_PAIRS = get_unique_vs(PATIENT_IDS, CLONES)
+PATIENT_V_PAIRS = get_patient_vgene_pairs(PATIENT_IDS, CLONES)
 
 """
 rule all:
@@ -130,8 +130,10 @@ rule profile_alignment:
     fasta_aa="data/{patient_id}/V{v_gene}/profile_AA.fasta"
   shell:
     """
-      mafft --add {input.germline_nuc} --reorder {input.nuc} > {output.fasta_nuc}
-      mafft --add {input.germline_aa} --reorder {input.aa} > {output.fasta_aa}
+      mafft --add {input.germline_nuc} --reorder {input.nuc} > {output.fasta_nuc} || 
+        cp {input.nuc} {output.fasta_nuc}
+      mafft --add {input.germline_aa} --reorder {input.aa} > {output.fasta_aa} ||
+        cp {input.aa} {output.fasta_aa}
     """
 
 rule gap_trimmer:
@@ -147,7 +149,7 @@ rule indicial_mapper:
     fasta=rules.profile_alignment.output.fasta_aa,
     json=rules.blast_result.output.json
   output:
-    json="data/{patient_id}/V{v_gene}_indices.json"
+    json="data/{patient_id}/V{v_gene}/indices.json"
   run:
     indicial_mapper(input.fasta, input.json, output.json, wildcards.v_gene)
 
