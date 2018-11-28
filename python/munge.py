@@ -65,105 +65,6 @@ def clone_json_to_unaligned_fasta(input, output, clone):
         print('%d sequences that would not translate.' % bad_sequences)
 
 
-def parse_imgt_record(input_record, output_nucleotide_fasta, output_protein_fasta, output_json, v_gene):
-    inside_sequence = False
-    inside_exon = False
-    inside_cdr3 = False
-    inside_fr3 = False
-
-    sequence_string = ''
-    exon_lines = []
-    cdr3_lines = []
-    fr3_lines = []
-    with open(input_record) as raw_file:
-        for line in raw_file:
-            if 'V-EXON' in line:
-                inside_exon = True
-            elif 'L-PART2' in line:
-                inside_exon = False
-            if 'CDR3-IMGT' in line:
-                inside_cdr3 = True
-            elif "3'UTR" in line:
-                inside_cdr3 = False
-            if 'FR3-IMGT' in line:
-                inside_fr3 = True
-            elif '2nd-CYS' in line:
-                inside_fr3 = False
-
-            if inside_sequence:
-                sequence_string += ''.join(line.split()[:-1])
-            if inside_exon:
-                exon_lines.append(line)
-            if inside_cdr3:
-                cdr3_lines.append(line)
-            if inside_fr3:
-                fr3_lines.append(line)
-
-            if line[:2] == 'SQ':
-                inside_sequence = True
-    sequence = Seq(sequence_string)
-
-    exon_start = int(exon_lines[0].split()[2].split('..')[0])
-    exon_start += 1
-    exon_end = int(exon_lines[0].split()[2].split('..')[1])
-    exon_end -= 2
-    exon_codon_start = int(exon_lines[1].split('=')[-1])
-    exon_translation = exon_lines[2].split('"')[-1]
-    exon_translation += exon_lines[3].split()[-1]
-    exon_translation += exon_lines[4].split()[1][:-1]
-    exon_translation = "".join(exon_translation.split())
-    assert str(sequence[exon_start: exon_end].translate()) == exon_translation
-
-    cdr3_nucleotide_start = int(cdr3_lines[0].split()[2].split('..')[0])
-    cdr3_nucleotide_start -= 1
-    cdr3_nucleotide_end = int(cdr3_lines[0].split()[2].split('..')[1])
-    cdr3_nucleotide_end -= 2
-    cdr3_translation = cdr3_lines[1].split('"')[1]
-    cdr3_nucleotides = sequence[cdr3_nucleotide_start: cdr3_nucleotide_end]
-    cdr3_check = str(cdr3_nucleotides.translate())
-    assert cdr3_check == cdr3_translation
-    cdr3_protein_start = int((cdr3_nucleotide_start - exon_start) / 3)
-    cdr3_protein_width = int((cdr3_nucleotide_end - cdr3_nucleotide_start) / 3)
-    cdr3_protein_end = cdr3_protein_start + cdr3_protein_width
-    assert exon_translation[cdr3_protein_start: cdr3_protein_end] == cdr3_translation
-
-    fr3_nucleotide_start = int(fr3_lines[0].split()[2].split('..')[0])
-    fr3_nucleotide_start -= 1
-    fr3_nucleotide_end = int(fr3_lines[0].split()[2].split('..')[1])
-    fr3_translation = fr3_lines[1].split('"')[1]
-    fr3_check = str(sequence[fr3_nucleotide_start: fr3_nucleotide_end].translate())
-    assert fr3_check == fr3_translation
-    fr3_protein_start = int((fr3_nucleotide_start - exon_start) / 3)
-    fr3_protein_width = int((fr3_nucleotide_end - fr3_nucleotide_start) / 3)
-    fr3_protein_end = fr3_protein_start + fr3_protein_width
-    assert exon_translation[fr3_protein_start: fr3_protein_end] == fr3_translation
-
-    record_information = {
-        "exon_start": exon_start,
-        "exon_finish": exon_end,
-        "exon_codon_start": exon_codon_start,
-        "exon_translation": exon_translation,
-        "cdr3_nucleotide_start": cdr3_nucleotide_start,
-        "cdr3_nucleotide_end": cdr3_nucleotide_end,
-        "cdr3_protein_start": cdr3_protein_start,
-        "cdr3_protein_end": cdr3_protein_end,
-        "cdr3_translation": cdr3_translation,
-        "fr3_nucleotide_start": fr3_nucleotide_start,
-        "fr3_nucleotide_end": fr3_nucleotide_end,
-        "fr3_protein_start": fr3_protein_start,
-        "fr3_protein_end": fr3_protein_end,
-        "fr3_translation": fr3_translation
-    }
-
-    header = "Germline_V%s" % v_gene
-    with open(output_nucleotide_fasta, 'w') as nucleotide_fasta_file:
-        nucleotide_fasta_file.write('>%s\n%s\n' % (header, sequence))
-    with open(output_protein_fasta, 'w') as protein_fasta_file:
-        protein_fasta_file.write('>%s\n%s\n' % (header, exon_translation))
-    with open(output_json, 'w') as json_file:
-        json.dump(record_information, json_file, indent=4)
-
-
 def separate_into_regions(input, output, v_gene):
     v_gene_regex = re.compile('._V(' + v_gene + ').')
     bad_searches = []
@@ -295,6 +196,16 @@ def gap_trimmer(input, output):
             file.write("{}{}\n{}\n".format( '>', line[0], line[1]))
 
 
+def get_protein_indices(exon_start, region_start, region_end, index_map):
+    protein_start = int(region_start - exon_start) // 3
+    region_width = int(region_end - region_start) // 3
+    protein_end = protein_start + region_width
+    return (
+        int(index_map[protein_start]) + 1,
+        int(index_map[protein_end - 1]) + 1
+    )
+
+
 def indicial_mapper(input_fasta, input_json, output_json, v_gene):
     profile = list(SeqIO.parse(input_fasta, 'fasta'))
     germline = None
@@ -310,15 +221,28 @@ def indicial_mapper(input_fasta, input_json, output_json, v_gene):
     with open(input_json) as v_gene_json_file:
         imgt_vgene_data = json.load(v_gene_json_file)
 
-    CDR3_profile_coords = (
-        int(index_map[imgt_vgene_data['cdr3_protein_start']])+1,
-        int(index_map[imgt_vgene_data['cdr3_protein_end']-1])+1
-    )
+    has_cdr3 = bool(imgt_vgene_data['CDR3-IMGT-START'])
+    has_fr3 = bool(imgt_vgene_data['FR3-IMGT-START'])
+    has_exon = bool(imgt_vgene_data['V-EXON-START'])
+    if has_cdr3 and has_exon:
+        CDR3_profile_coords = get_protein_indices(
+            imgt_vgene_data['V-EXON-START'],
+            imgt_vgene_data['CDR3-IMGT-START'],
+            imgt_vgene_data['CDR3-IMGT-END'],
+            index_map
+        )
+    else:
+        CDR3_profile_coords = None
 
-    FR3_profile_coords = (
-        int(index_map[imgt_vgene_data['fr3_protein_start']])+1,
-        int(index_map[imgt_vgene_data['fr3_protein_end']-1])+1
-    )
+    if has_fr3 and has_exon:
+        FR3_profile_coords = get_protein_indices(
+            imgt_vgene_data['V-EXON-START'],
+            imgt_vgene_data['FR3-IMGT-START'],
+            imgt_vgene_data['FR3-IMGT-END'],
+            index_map
+        )
+    else:
+        FR3_profile_coords = None
 
     output_dict = {
         'CDR3': CDR3_profile_coords,

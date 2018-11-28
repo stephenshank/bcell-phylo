@@ -67,15 +67,20 @@ rule protein_and_corrected_dna:
 
 rule alignments:
   input:
-    rules.protein_and_corrected_dna.output.aa
+    nuc=rules.separate_into_regions.output.fasta,
+    aa=rules.protein_and_corrected_dna.output.aa
   output:
-    "data/{patient_id}/V{v_gene}/aligned_AA.fasta",
+    nuc="data/{patient_id}/V{v_gene}/aligned.fasta",
+    aa="data/{patient_id}/V{v_gene}/aligned_AA.fasta",
   shell:
-    "mafft --amino {input} > {output}"
+    """
+      mafft {input.nuc} > {output.nuc}
+      mafft --amino {input.aa} > {output.aa}
+    """
 
 rule codon_maker:
   input:
-    aligned_aa=rules.alignments.output[0],
+    aligned_aa=rules.alignments.output.aa,
     unaligned_nucleotide=rules.protein_and_corrected_dna.output.nuc
   output:
     codon="data/{patient_id}/V{v_gene}/codon.fasta",
@@ -90,24 +95,45 @@ rule consensus:
   run:
     get_consensus_sequence(input.fasta, output.fasta)
 
-rule blast_results:
+rule blast_imgt:
   input:
     rules.consensus.output.fasta
   output:
-    "data/{patient_id}/V{v_gene}/blast/result.json"
+    summary="data/{patient_id}/V{v_gene}/blast/result.json",
+    consensus="data/{patient_id}/V{v_gene}/blast/result_1.json"
   shell:
-    "blastn -db data/blast/db -outfmt 13 -query {input} -out {output}"
+    "blastn -db data/blast/db -outfmt 13 -query {input} -out {output.summary}"
 
-"""
+rule blast_result:
+  input:
+    blast_result=rules.blast_imgt.output.consensus
+  output:
+    nuc_fasta="data/{patient_id}/V{v_gene}/imgt_reference.fasta",
+    aa_fasta="data/{patient_id}/V{v_gene}/imgt_reference_AA.fasta",
+    json="data/{patient_id}/V{v_gene}/imgt.json"
+  run:
+    process_blast_result(
+      input.blast_result,
+      output.nuc_fasta,
+      output.aa_fasta,
+      output.json
+    )
+
 rule profile_alignment:
   input:
-    codon=rules.alignments.output[0],
-    germline=rules.imgt_information.output.protein_fasta
+    aa=rules.alignments.output.aa,
+    germline_aa=rules.blast_result.output.aa_fasta,
+    nuc=rules.alignments.output.nuc,
+    germline_nuc=rules.blast_result.output.nuc_fasta
   output:
-    fasta="data/{patient_id}/V{v_gene}_profile.fasta"
+    fasta_nuc="data/{patient_id}/V{v_gene}/profile.fasta",
+    fasta_aa="data/{patient_id}/V{v_gene}/profile_AA.fasta"
   shell:
-    "mafft --add {input.germline} --reorder {input.codon} > {output.fasta}"  
-"""
+    """
+      mafft --add {input.germline_nuc} --reorder {input.nuc} > {output.fasta_nuc}
+      mafft --add {input.germline_aa} --reorder {input.aa} > {output.fasta_aa}
+    """
+
 rule gap_trimmer:
   input:
     codon=rules.codon_maker.output.codon
@@ -115,16 +141,16 @@ rule gap_trimmer:
     trimmed="data/{patient_id}/V{v_gene}/codon_ungapped.fasta",
   run:
     gap_trimmer(input.codon, output.trimmed)
-"""
+
 rule indicial_mapper:
   input:
-    fasta=rules.profile_alignment.output.fasta,
-    json=rules.imgt_information.output.json
+    fasta=rules.profile_alignment.output.fasta_aa,
+    json=rules.blast_result.output.json
   output:
     json="data/{patient_id}/V{v_gene}_indices.json"
   run:
     indicial_mapper(input.fasta, input.json, output.json, wildcards.v_gene)
-"""
+
 rule trees:
   input:
     fasta=rules.gap_trimmer.output.trimmed
@@ -133,14 +159,13 @@ rule trees:
   shell:
     "FastTree -nt {input.fasta} > {output.tree}"
 
-"""
 rule v_gene_json:
   input:
-    fasta=rules.profile_alignment.output.fasta,
+    fasta=rules.profile_alignment.output.fasta_aa,
     json=rules.indicial_mapper.output.json,
     tree=rules.trees.output.tree,
   output:
     json="data/{patient_id}/V{v_gene}/dashboard.json"
   run:
     json_for_dashboard(input.fasta, input.json, input.tree, output.json, wildcards)
-"""
+

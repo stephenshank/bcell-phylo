@@ -30,7 +30,7 @@ class App extends Component {
       if (fragment == "full") {
         var json_path = `/data/${patient}/V${gene}.json`;
       } else {
-        var json_path = `/data/${patient}/V${gene}-${fragment}.json`;
+        var json_path = `/data/${patient}/V${gene}-${fragment}/dashboard.json`;
       }
       d3.json(json_path, (err, json_data) => {
         json_data.patient = patient;
