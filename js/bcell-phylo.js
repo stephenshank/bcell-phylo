@@ -517,6 +517,10 @@ class BCellPhylo extends Component {
       return character.toUpperCase() != "X" ? "black" : "white";
     };
     this.sequence_data.number_of_sites = this.sequence_data[0].seq.length;
+    const number_of_sequences = this.sequence_data.length-1;
+    const tree_style = number_of_sequences > 35 ?
+      { overflowX: "scroll", overflowY: "scroll" } :
+      { display: "flex", justifyContent: "flex-end" };
     return (<Row>
       <Col xs={12}>
         <div id='viz' style={{display: "flex"}}>
@@ -582,7 +586,7 @@ class BCellPhylo extends Component {
 
             <div
               id="alignmentjs-largeTreeAlignment-div"
-              style={{ overflowX: "scroll", overflowY: "scroll", display: "flex", justifyContent: "flex-end"}}
+              style={tree_style}
             >
               <svg id="alignmentjs-largeTreeAlignment" />
             </div>
