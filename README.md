@@ -68,6 +68,6 @@ rsync -arvm --include "*/V*.json" --include="*/" --exclude="*" data/ $USER@$HOST
 ### Webserver
 
 ```
-webpack
+yarn build
 npx http-server -p $PORT dist
 ```
