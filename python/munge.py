@@ -1,5 +1,4 @@
 import os
-import itertools as it
 import re
 import collections
 import json
@@ -17,11 +16,22 @@ from joblib import Memory
 JOBLIB_CACHE = os.path.join('data', 'joblib')
 MEMORY = Memory(JOBLIB_CACHE, verbose=0)
 
+
+def get_vgene_id(entry):
+    return re.split(',|\*|\|', entry['tag'])[0]
+
+
+def is_valid_entry(entry):
+    is_right_size = entry['size'] > 30
+    is_not_full_v = len(get_vgene_id(entry)) > 2
+    not_or = not 'OR' in entry['tag']
+    return is_right_size and is_not_full_v and not_or
+
+
 @MEMORY.cache
 def get_patient_vgene_pairs(patients, clones, write=False):
     vs = []
     patient_v_pairs = []
-    is_valid_entry = lambda entry: not 'OR' in entry['tag'] and entry['size'] > 30
     for patient_id in patients:
         current_patient_vs = []
         for clone in clones:
@@ -29,15 +39,10 @@ def get_patient_vgene_pairs(patients, clones, write=False):
             with open(json_filename) as json_file:
                 data = json.load(json_file)
             all_entries = it.chain.from_iterable(data)
-            current_vs = [re.split(',|\*|\|', entry['tag'])[0] for entry in all_entries if is_valid_entry(entry)]
+            current_vs = [get_vgene_id(entry) for entry in all_entries if is_valid_entry(entry)]
             current_patient_vs += current_vs
-        unique_patient_vs = sorted(list(set(current_patient_vs)))
+        unique_patient_vs = [v for v in sorted(list(set(current_patient_vs))) if v != 'V' and not 'OR' in v]
         patient_v_pairs += [{'patient_id': patient_id, 'v_gene': v} for v in unique_patient_vs]
-    key = lambda entry: entry['patient_id']
-    val = lambda v: [entry['v_gene'] for entry in v]
-    nested_pvps = {k: val(v) for k,v in it.groupby(patient_v_pairs, key)}
-    with open('data/patient_v_pairs.json', 'w') as output_file:
-        json.dump(nested_pvps, output_file, indent=2)
     return patient_v_pairs
 
 
@@ -256,4 +261,26 @@ def indicial_mapper(input_fasta, input_json, output_json, v_gene):
             empty_json = { 'CDR3': None, 'FR3': None }
             json.dump(empty_json, output_json_file)
 
+
+def cleanup(patient_ids):
+    nested_pvps = {}
+    is_vgene_directory = lambda directory: directory[-6:] != '.fasta'
+    for patient_id in patient_ids:
+        vgene_allele = {}
+        patient_directory = 'data/%s' % patient_id
+        directory_contents = os.listdir(patient_directory)
+        vgene_candidates = [content for content in directory_contents if is_vgene_directory(content)]
+        for vgene_candidate in vgene_candidates:
+            dashboard_path = 'data/%s/%s/dashboard.json' % (patient_id, vgene_candidate)
+            if os.path.isfile(dashboard_path):
+                key = vgene_candidate[1] 
+                index = vgene_candidate.index('-')
+                fragment = vgene_candidate[index+1:]
+                if key in vgene_allele:
+                    vgene_allele[key].append(fragment)
+                else:
+                    vgene_allele[key] = [fragment]
+        nested_pvps[patient_id] = vgene_allele
+    with open('data/patient_v_pairs.json', 'w') as output_file:
+        json.dump(nested_pvps, output_file, indent=2)
 

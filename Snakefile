@@ -5,15 +5,12 @@ PATIENT_IDS = ["28729", "48689", "67029", "77612", "78202", "93954", "99361", "9
 CLONES = ["1", "2", "3", "4", "5", "6"]
 PATIENT_V_PAIRS = get_patient_vgene_pairs(PATIENT_IDS, CLONES)
 
-"""
+dashboard_filename = lambda pair: "data/%s/%s/dashboard.json" % (pair['patient_id'], pair['v_gene'])
 rule all:
   input:
-    expand(
-      "data/{patient_id}/V{v_gene}.json",
-      patient_id=PATIENT_IDS,
-      v_gene=GENES,
-    )
-"""
+    [dashboard_filename(pair) for pair in PATIENT_V_PAIRS]
+  run:
+    cleanup(PATIENT_IDS)
 
 rule imgt_information:
   input:
@@ -67,7 +64,7 @@ rule protein_and_corrected_dna:
 
 rule alignments:
   input:
-    nuc=rules.separate_into_regions.output.fasta,
+    nuc=rules.protein_and_corrected_dna.output.nuc,
     aa=rules.protein_and_corrected_dna.output.aa
   output:
     nuc="data/{patient_id}/V{v_gene}/aligned.fasta",

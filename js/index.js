@@ -19,6 +19,8 @@ class App extends Component {
     this.patients = Object.keys(patient_v_pairs);
     this.state = { 
       patient: null,
+      fragments: [],
+      fragment: null,
       genes: [],
       gene: null
     };
@@ -37,8 +39,9 @@ class App extends Component {
         this.setState({
           patient: patient,
           gene: gene,
-          genes: patient_v_pairs[patient],
+          genes: Object.keys(patient_v_pairs[patient]),
           fragment: fragment,
+          fragments: patient_v_pairs[patient][gene],
           json: json_data
         });
       });
@@ -51,17 +54,20 @@ class App extends Component {
     this.loadData(patient, gene, fragment);
   }
   onSelect(key){
-    const fragment_choices = {
-      1: 18,
-      2: 26,
-      3: 11,
-      4: 30,
-      5: 51,
-      6: 1
-    };
-    const patient = key.type == 'patient' ? key.value : this.state.patient;
-    const gene = key.type == 'gene' ? key.value : this.state.gene;
-    const fragment = key.type == 'fragment' ? key.value : fragment_choices[gene];
+    var patient, gene, fragment;
+    if(key.type == 'patient') {
+      patient = key.value;
+      gene = Object.keys(patient_v_pairs[patient])[0];
+      fragment = patient_v_pairs[patient][gene][0];
+    } else if(key.type == 'gene') {
+      patient = this.state.patient;
+      gene = key.value;
+      fragment = patient_v_pairs[patient][gene][0];
+    } else if(key.type == 'fragment') {
+      patient = this.state.patient;
+      gene = this.state.gene;
+      fragment = key.value;
+    }
     this.loadData(patient, gene, fragment);
   }
   render(){
@@ -99,9 +105,8 @@ class App extends Component {
               }) }
             </NavDropdown>
             <NavDropdown title='Fragment' id='fragment'>
-              {this.state.genes.filter(g=>g[1]==this.state.gene)
+              {this.state.fragments
                 .map(fragment => {
-                  fragment = fragment.split(/-|\//).slice(1).join('-');
                   const eventKey = { type: 'fragment', value: fragment };
                   return (<MenuItem
                     eventKey={eventKey}
