@@ -16,7 +16,7 @@ const patient_v_pairs = require('../data/patient_v_pairs.json');
 class App extends Component {
   constructor(props){
     super(props);
-    this.patients = [ "28729", "48689", "67029", "77612", "78202", "93954", "99361", "99682", "GJS" ];
+    this.patients = Object.keys(patient_v_pairs);
     this.state = { 
       patient: null,
       genes: [],
@@ -52,7 +52,12 @@ class App extends Component {
   }
   onSelect(key){
     const fragment_choices = {
+      1: 18,
+      2: 26,
       3: 11,
+      4: 30,
+      5: 51,
+      6: 1
     };
     const patient = key.type == 'patient' ? key.value : this.state.patient;
     const gene = key.type == 'gene' ? key.value : this.state.gene;

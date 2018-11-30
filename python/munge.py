@@ -21,6 +21,7 @@ MEMORY = Memory(JOBLIB_CACHE, verbose=0)
 def get_patient_vgene_pairs(patients, clones, write=False):
     vs = []
     patient_v_pairs = []
+    is_valid_entry = lambda entry: not 'OR' in entry['tag'] and entry['size'] > 30
     for patient_id in patients:
         current_patient_vs = []
         for clone in clones:
@@ -28,7 +29,7 @@ def get_patient_vgene_pairs(patients, clones, write=False):
             with open(json_filename) as json_file:
                 data = json.load(json_file)
             all_entries = it.chain.from_iterable(data)
-            current_vs = [re.split(',|\*|\|', entry['tag'])[0] for entry in all_entries]
+            current_vs = [re.split(',|\*|\|', entry['tag'])[0] for entry in all_entries if is_valid_entry(entry)]
             current_patient_vs += current_vs
         unique_patient_vs = sorted(list(set(current_patient_vs)))
         patient_v_pairs += [{'patient_id': patient_id, 'v_gene': v} for v in unique_patient_vs]
