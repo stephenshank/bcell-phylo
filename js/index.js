@@ -14,7 +14,7 @@ const patients = Object.keys(patient_v_pairs);
 
 
 function parse_route(route) {
-  const split_route = route.split(/\/|-/);
+  const split_route = route.split(/&|-/);
   return {
     patient_id: +split_route[1] || 77612,
     gene: split_route[2] ? String(split_route[2])[1] : "3",
@@ -23,7 +23,7 @@ function parse_route(route) {
 }
 
 function get_route(patient_id, gene, allele) {
-  return `/${patient_id}/V${gene}-${allele}`;
+  return `/${patient_id}&V${gene}-${allele}`;
 }
 
 const PatientDropdown = withRouter(function(props) {
@@ -94,7 +94,7 @@ function App() {
         </Nav>
       </Navbar>
       <Grid fluid>
-        <Route path="/:patient_id/:allele" component={BCellInterface} />
+        <Route path="/:patient_id&:allele" component={BCellInterface} />
         <Route exact path="/" component={Overview} />
       </Grid>
     </div>
