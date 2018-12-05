@@ -81,6 +81,18 @@ class Overview extends Component {
         </label>
         <ExpansionTable data={data} /> 
       </div>
+      <div style={{padding: 20}}>
+        <h2>BCell-Phylo</h2>
+        <p>Phylogenetic visualization of immune repertoires.</p>
+        <h3>Overview</h3>
+        <p>The present page.</p>
+        <p><b>Click</b> a row of the table to view results for that patient/V-gene combination.</p>
+        <p><b>Filter</b> a column by selecting the appropriate filter from the dropdown at the top.</p>
+        <p><b>Click</b> a column header to sort a given column in descending order.</p>
+        <p><b>Size</b> denotes largest clades found which are composed of 90% or more from a particular visit (to detect clonal expansion).</p>
+        <h3>Visualization</h3>
+        <p>Alignments, phylogenetic trees, and annotated regions are displayed.</p>
+      </div>
     </div>);
   }
 }
