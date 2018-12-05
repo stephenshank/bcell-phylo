@@ -20,7 +20,8 @@ const ExpansionTable = withRouter(function(props){
       { Header: "Visit 3 size", accessor: 'visit3', headerStyle: {fontWeight: 'bold'}}
     ]}
     getTrProps={(state, rowInfo, column) => {
-      const { patient_id, vgene_allele } = rowInfo.original,
+      if (!rowInfo) return { className: '' };
+      const { patient_id, vgene_allele } = rowInfo.row,
         route = `/${patient_id}&${vgene_allele}`;
       return {
         onClick: ()=>history.push(route)
@@ -34,7 +35,8 @@ class Overview extends Component {
     super(props);
     this.state = {
       data: null,
-      patient_id: 'all' 
+      patient_id: 'all',
+      vgene: 'all'
     };
   }
   componentDidMount() {
@@ -49,9 +51,17 @@ class Overview extends Component {
   }
   render() {
     if (!this.state.data) return <div/>;
-    const data = this.state.patient_id == 'all' ?
-      this.state.data :
-      this.state.data.filter(datum => datum.patient_id == this.state.patient_id);
+    const data = this.state.data
+      .filter(datum => {
+        const desired_patient_id = this.state.patient_id == 'all' ?
+          true :
+          datum.patient_id == this.state.patient_id,
+        desired_vgene = this.state.vgene == 'all' ?
+          true :
+          +datum.vgene_allele[1] == this.state.vgene,
+        is_desired = desired_patient_id && desired_vgene;
+        return is_desired;
+      });
     return (<div style={{display: "flex", justifyContent: "center"}}>
       <div>
         <b> FILTERS - </b>
@@ -60,6 +70,13 @@ class Overview extends Component {
           <select value={this.state.patient_id} onChange={e=>this.setState({patient_id: e.target.value})}>
             <option value='all'>All</option>
             {PATIENT_IDS.map(patient_id => <option value={patient_id}>{patient_id}</option>)}
+          </select>
+        </label>
+        <label>
+          V-gene: 
+          <select value={this.state.vgene} onChange={e=>this.setState({vgene: e.target.value})}>
+            <option value='all'>All</option>
+            {[1,2,3,4,5,6].map(vgene => <option value={vgene}>{vgene}</option>)}
           </select>
         </label>
         <ExpansionTable data={data} /> 
