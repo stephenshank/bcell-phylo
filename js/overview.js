@@ -64,21 +64,23 @@ class Overview extends Component {
       });
     return (<div style={{display: "flex", justifyContent: "center"}}>
       <div>
-        <b> FILTERS - </b>
-        <label>
-          Patient ID: 
-          <select value={this.state.patient_id} onChange={e=>this.setState({patient_id: e.target.value})}>
-            <option value='all'>All</option>
-            {PATIENT_IDS.map(patient_id => <option value={patient_id}>{patient_id}</option>)}
-          </select>
-        </label>
-        <label>
-          V-gene: 
-          <select value={this.state.vgene} onChange={e=>this.setState({vgene: e.target.value})}>
-            <option value='all'>All</option>
-            {[1,2,3,4,5,6].map(vgene => <option value={vgene}>{vgene}</option>)}
-          </select>
-        </label>
+        <div style={{display: "flex", justifyContent: "space-around"}}> 
+          <b> FILTERS - </b>
+          <label>
+            Patient ID: 
+            <select value={this.state.patient_id} onChange={e=>this.setState({patient_id: e.target.value})}>
+              <option value='all'>All</option>
+              {PATIENT_IDS.map(patient_id => <option value={patient_id}>{patient_id}</option>)}
+            </select>
+          </label>
+          <label>
+            V-gene: 
+            <select value={this.state.vgene} onChange={e=>this.setState({vgene: e.target.value})}>
+              <option value='all'>All</option>
+              {[1,2,3,4,5,6].map(vgene => <option value={vgene}>{vgene}</option>)}
+            </select>
+          </label>
+        </div>
         <ExpansionTable data={data} /> 
       </div>
       <div style={{padding: 20}}>
