@@ -221,13 +221,13 @@ class BCellPhylo extends Component {
     const ordered_leaf_names = this.main_tree
       .get_nodes(true)
       .filter(d3.layout.phylotree.is_leafnode)
-      .map(d => d.name.split('_')[0]);
+      .map(d => d.name);
     this.sequence_data.sort((a, b) => {
       if(a.old_header.indexOf('Germline_') > -1) return -1;
       if(b.old_header.indexOf('Germline_') > -1) return 1;
     
-      const a_header = a.old_header.split('_')[0],
-        b_header = b.old_header.split('_')[0],
+      const a_header = a.old_header.split(',')[0],
+        b_header = b.old_header.split(',')[0],
         a_index = ordered_leaf_names.indexOf(a_header),
         b_index = ordered_leaf_names.indexOf(b_header);
       return a_index - b_index;
